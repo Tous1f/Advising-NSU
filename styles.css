@@ -1,0 +1,51 @@
+:root{
+  --bg:#0b0f15; --card:#0f1720; --muted:#9aa4b2; --accent:#ffd400; --glass:rgba(255,255,255,0.03);
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;background:linear-gradient(180deg,#05060a 0%, #0b0f15 100%);color:#e6eef8;min-height:100vh}
+.app{max-width:760px;margin:0 auto;padding:14px}
+.app-header{display:flex;align-items:center;gap:12px;padding:10px 6px}
+.logo{width:44px;height:44px;border-radius:8px;background:linear-gradient(180deg,#111827,#0b1220);display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,0.04)}
+.title{font-weight:700;font-size:20px;flex:1;letter-spacing:0.6px}
+.bat-svg{transform-origin:center;animation:batFloat 3s ease-in-out infinite}
+.btn{background:var(--card);border:1px solid rgba(255,255,255,0.05);color:var(--accent);padding:8px 12px;border-radius:10px;font-weight:600}
+.btn.small{padding:6px 8px;font-size:13px}
+.controls{padding:12px 6px}
+.btn-row{display:flex;gap:8px;margin-bottom:8px}
+.summary{color:var(--muted);font-size:13px;margin-top:6px}
+.results{display:flex;flex-direction:column;gap:12px;padding:8px 6px}
+.card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:12px;padding:12px;border:1px solid rgba(255,255,255,0.03);box-shadow:0 6px 20px rgba(0,0,0,0.6)}
+.card h4{margin:0 0 6px 0;font-size:15px}
+.meta{display:flex;gap:8px;flex-wrap:wrap;color:var(--muted);font-size:13px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.cell{background:var(--glass);padding:8px;border-radius:8px;font-size:13px}
+.filters{position:fixed;right:14px;top:80px;background:#071018;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);width:220px}
+.filters.hidden{display:none}
+.filter-row{margin:6px 0}
+.faculty-list{max-height:220px;overflow:auto;display:grid;grid-template-columns:1fr 1fr;gap:6px}
+
+.filter-close{margin-top:8px}
+.filter-row label{margin-right:6px}
+
+.cell{background:var(--glass);padding:8px;border-radius:8px;font-size:13px}
+
+/* timetable grid */
+.timetable{margin-top:8px;border-radius:8px;overflow:auto;background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.02));padding:6px}
+.tt-grid{display:grid;grid-template-columns:80px repeat(7,1fr);gap:4px;align-items:start}
+.tt-cell{background:rgba(255,255,255,0.02);padding:6px;border-radius:6px;font-size:12px;min-height:20px}
+.tt-header{font-weight:700;color:var(--accent);text-align:center;padding:8px 6px}
+.course-pill{background:#0d141b;border-left:4px solid var(--accent);padding:6px;border-radius:6px;color:#e6eef8;font-size:12px;display:flex;align-items:center;gap:8px}
+.course-block{position:relative;color:#e6eef8;padding:6px;border-radius:6px;box-shadow:0 6px 18px rgba(0,0,0,0.5);overflow:hidden}
+.course-block .meta{font-size:11px;color:#9aa4b2;margin-top:4px}
+.icon{width:16px;height:16px;flex:0 0 16px}
+.time-label{font-size:11px;color:var(--muted);padding-left:8px}
+
+/* visual grid background cells */
+.tt-bg{background:transparent;border:1px dashed rgba(255,255,255,0.02)}
+
+
+@keyframes batFloat{0%{transform:translateY(0)}50%{transform:translateY(-6px)}100%{transform:translateY(0)}}
+
+.app-footer{margin-top:14px;display:flex;justify-content:space-between;color:var(--muted);font-size:12px}
+.link{color:var(--accent);cursor:pointer}
+@media(min-width:720px){.grid{grid-template-columns:repeat(3,1fr)}}

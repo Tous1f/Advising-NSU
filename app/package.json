@@ -1,0 +1,24 @@
+{
+  "name": "batsched",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "start": "python -m http.server 5500",
+    "build": "echo no build step (static)",
+    "cap:init": "npx cap init batsched com.example.batsched --web-dir=.",
+    "cap:add": "npx cap add android",
+    "cap:sync": "npx cap sync android",
+    "cap:copy": "npx cap copy android",
+    "android": "npx cap sync android && cd android && ./gradlew assembleDebug"
+  },
+  "dependencies": {
+    "@capacitor/core": "^6.0.0",
+    "@capacitor/android": "^6.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.0.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "appId": "com.example.batsched",
+  "appName": "BatSched",
+  "webDir": ".",
+  "bundledWebRuntime": false,
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 0
+    }
+  }
+}

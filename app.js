@@ -28,6 +28,7 @@ window.addEventListener('load', function() {
     stepNavigation: document.getElementById('stepNavigation'),
     toggleSidebar: document.getElementById('toggleSidebar'),
     courseSearch: document.getElementById('courseSearch'),
+    mainCourseSearch: document.getElementById('mainCourseSearch'),
     facultySearch: document.getElementById('facultySearch'),
     btnGenerateRoutine: document.getElementById('btnGenerateRoutine'),
     btnReset: document.getElementById('btnReset'),
@@ -290,7 +291,7 @@ window.addEventListener('load', function() {
 
     static updateCourseList() {
       try {
-        const searchTerm = elements.courseSearch.value || '';
+        const searchTerm = (elements.courseSearch.value || elements.mainCourseSearch.value || '');
         const filteredCourses = this.filterCourses(searchTerm);
         const uniqueCourses = [...new Set(filteredCourses.map(c => c.course))];
         
@@ -579,12 +580,23 @@ window.addEventListener('load', function() {
     if (elements.toggleSidebar && elements.sidebar) {
       elements.toggleSidebar.addEventListener('click', () => {
         elements.sidebar.classList.toggle('active');
+        // Save sidebar state
+        localStorage.setItem('sidebarActive', elements.sidebar.classList.contains('active'));
       });
+      
+      // Restore sidebar state
+      const sidebarActive = localStorage.getItem('sidebarActive');
+      if (sidebarActive === 'true') {
+        elements.sidebar.classList.add('active');
+      }
     }
 
     // Search functionality
     if (elements.courseSearch) {
-      elements.courseSearch.addEventListener('input', CourseManager.updateCourseList);
+      elements.courseSearch.addEventListener('input', () => CourseManager.updateCourseList());
+    }
+    if (elements.mainCourseSearch) {
+      elements.mainCourseSearch.addEventListener('input', () => CourseManager.updateCourseList());
     }
     if (elements.facultySearch) {
       elements.facultySearch.addEventListener('input', CourseManager.updateFacultyList);
@@ -656,6 +668,12 @@ window.addEventListener('load', function() {
 
   // Initialize Application
   function init() {
+    // Ensure COURSES is loaded
+    if (typeof COURSES === 'undefined') {
+      console.error('Course data not loaded');
+      return;
+    }
+
     // Set initial theme
     document.body.classList.toggle('dark-theme', state.darkMode);
     if (elements.themeToggle) {
@@ -667,11 +685,18 @@ window.addEventListener('load', function() {
     // Set initial view
     UIManager.setView(state.view);
     
-    // Load course list
-    CourseManager.updateCourseList();
+    // Initialize course list immediately
+    setTimeout(() => {
+      CourseManager.updateCourseList();
+    }, 0);
     
     // Setup event listeners
     setupEventListeners();
+    
+    // Show sidebar by default
+    if (elements.sidebar) {
+      elements.sidebar.classList.add('active');
+    }
     
     // Initialize summary
     if (elements.summary) {

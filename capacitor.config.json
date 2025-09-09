@@ -1,7 +1,7 @@
 {
   "appId": "com.example.batsched",
   "appName": "BatSched",
-  "webDir": ".",
+  "webDir": "www",
   "bundledWebRuntime": false,
   "plugins": {
     "SplashScreen": {

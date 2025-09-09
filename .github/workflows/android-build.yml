@@ -83,6 +83,40 @@ jobs:
           fi
           npx cap --version
 
+      - name: Prepare web directory
+        run: |
+          echo "Creating www directory and copying web assets..."
+          mkdir -p www
+          # copy top-level assets if they exist
+          for f in index.html styles.css app.js data.js service-worker.js manifest.json; do
+            if [ -f "$f" ]; then cp "$f" www/; fi
+          done
+          # copy icons
+          shopt -s nullglob || true
+          for icon in icon-*.png; do cp "$icon" www/ || true; done
+          # if there is an app/ folder with web assets, copy them too
+          if [ -d "app" ]; then
+            cp -r app/* www/ || true
+          fi
+          echo "Web directory contents:"
+          ls -la www/ || true
+
+      - name: Update Capacitor config
+        run: |
+          echo "Updating capacitor.config.json to set webDir=www..."
+          cat > capacitor.config.json << 'EOF'
+{
+  "appId": "com.example.batsched",
+  "appName": "BatSched",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "plugins": {
+    "SplashScreen": { "launchShowDuration": 0 }
+  }
+}
+EOF
+          echo "Updated config:" && cat capacitor.config.json
+
       - name: Add Android via Capacitor (if needed)
         run: |
           if [ ! -d "android" ]; then 

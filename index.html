@@ -4,9 +4,27 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>BatSched — Mobile Advising Plans</title>
-  <link rel="stylesheet" href="styles.css">
+  
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="./styles.css">
+  
+  <!-- PWA and Icons -->
   <link rel="apple-touch-icon" href="./icon-192.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="./icon-512.png">
+  <link rel="manifest" href="./manifest.json">
+  
+  <!-- Meta tags -->
   <meta name="description" content="Generate all advising plans on-device. No database. Mobile-first Batman-themed UI." />
+  <meta name="theme-color" content="#0b0f15">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="BatSched">
+  
+  <!-- Preload critical resources -->
+  <link rel="preload" href="./styles.css" as="style">
+  <link rel="preload" href="./app.js" as="script">
+  <link rel="preload" href="./data.js" as="script">
 </head>
 <body>
   <main class="app">
@@ -62,8 +80,6 @@
     </footer>
   </main>
 
-  <meta name="theme-color" content="#0b0f15">
-  <link rel="manifest" href="./manifest.json">
   <script>
     if('serviceWorker' in navigator){
       navigator.serviceWorker.register('service-worker.js').catch(()=>console.warn('SW register failed'));

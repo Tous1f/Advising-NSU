@@ -29,8 +29,5 @@
   "live-server.settings.port": 5500,
   "live-server.settings.CustomBrowser": "chrome",
   "live-server.settings.donotShowInfoMsg": true,
-  "workbench.colorCustomizations": {
-    "activityBar.background": "#0b0f15",
-    "activityBar.foreground": "#ffd400"
-  }
+  "liveServer.settings.port": 5501
 }

@@ -1,35 +1,34 @@
 // BatSched Course Dataset - Complete and Validated
 // This file contains all course data and preferences for the scheduling system
 
-// Course data structure validation
 function validateCourseData() {
   const requiredFields = ['course', 'section', 'faculty', 'time', 'days', 'seats'];
   const errors = [];
-  
+
   COURSES.forEach((course, index) => {
     requiredFields.forEach(field => {
       if (!course[field]) {
         errors.push(`Course ${index}: Missing ${field}`);
       }
     });
-    
+
     // Validate time format
     if (course.time && !/^\d{2}:\d{2} [AP]M - \d{2}:\d{2} [AP]M$/.test(course.time)) {
       errors.push(`Course ${index} (${course.course}): Invalid time format`);
     }
-    
+
     // Validate days format
     if (course.days && !/^[SMTWRAF]+$/.test(course.days)) {
       errors.push(`Course ${index} (${course.course}): Invalid days format`);
     }
   });
-  
+
   if (errors.length > 0) {
     console.warn('Course data validation errors:', errors);
   } else {
     console.log(`✅ Course data validated: ${COURSES.length} courses loaded successfully`);
   }
-  
+
   return errors.length === 0;
 }
 
@@ -47,7 +46,7 @@ const COURSES = [
   { course: "CSE327", section: 9, faculty: "MMA1", time: "11:20 AM - 12:50 PM", days: "RA", seats: 35 },
   { course: "CSE327", section: 10, faculty: "MRH1", time: "09:40 AM - 11:10 AM", days: "MW", seats: 35 },
   { course: "CSE327", section: 11, faculty: "TBA", time: "09:40 AM - 11:10 AM", days: "MW", seats: 35 },
-  
+
   // EEE154 Courses
   { course: "EEE154", section: 1, faculty: "TBA", time: "11:20 AM - 12:50 PM", days: "S", seats: 0 },
   { course: "EEE154", section: 2, faculty: "TBA", time: "11:20 AM - 12:50 PM", days: "T", seats: 0 },
@@ -77,7 +76,7 @@ const COURSES = [
   { course: "CSE311", section: 7, faculty: "NLH", time: "09:40 AM - 11:10 AM", days: "RA", seats: 35 },
   { course: "CSE311", section: 8, faculty: "MKN1", time: "08:00 AM - 09:30 AM", days: "RA", seats: 35 },
   { course: "CSE311", section: 9, faculty: "RIS", time: "04:20 PM - 05:50 PM", days: "RA", seats: 35 },
-  
+
   // CSE311L Courses
   { course: "CSE311L", section: 1, faculty: "TBA", time: "02:40 PM - 05:50 PM", days: "M", seats: 35 },
   { course: "CSE311L", section: 2, faculty: "TBA", time: "02:40 PM - 05:50 PM", days: "W", seats: 35 },
@@ -250,7 +249,10 @@ const PREFERENCES = {
 };
 
 // Required courses to schedule
-const REQUIRED = ['ENG111','CSE373','EEE111','CSE273','CSE323'];
+const REQUIRED = ['ENG111', 'CSE373', 'EEE111', 'CSE273', 'CSE323'];
+
+// Make COURSES available globally
+window.COURSES = COURSES;
 
 // Validate course data on startup
 validateCourseData();

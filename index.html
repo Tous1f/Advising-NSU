@@ -1,247 +1,375 @@
 <!doctype html>
-<html lang="en">
+<html lang="en"
+      data-theme="light">
+
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="viewport"
+        content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>CourseWizard — Smart Schedule Planner</title>
-  
+
+  <!-- Fonts -->
+  <link rel="preconnect"
+        href="https://fonts.googleapis.com">
+  <link rel="preconnect"
+        href="https://fonts.gstatic.com"
+        crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
   <!-- Stylesheets -->
-  <link rel="stylesheet" href="./styles.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-  
+  <link rel="stylesheet"
+        href="./styles.css">
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
   <!-- PWA and Icons -->
-  <link rel="apple-touch-icon" href="./icon-192.png">
-  <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-  <link rel="icon" type="image/png" sizes="512x512" href="./icon-512.png">
-  <link rel="manifest" href="./manifest.json">
-  
+  <link rel="apple-touch-icon"
+        href="./icon-192.png">
+  <link rel="icon"
+        type="image/png"
+        sizes="192x192"
+        href="./icon-192.png">
+  <link rel="icon"
+        type="image/png"
+        sizes="512x512"
+        href="./icon-512.png">
+  <link rel="manifest"
+        href="./manifest.json">
+
   <!-- Meta tags -->
-  <meta name="description" content="Smart course scheduling made magical. Create your perfect class schedule instantly." />
-  <meta name="theme-color" content="#0b0f15">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="CourseWizard">
-  
+  <meta name="description"
+        content="Smart course scheduling made magical. Create your perfect class schedule instantly." />
+  <meta name="theme-color"
+        content="#6366f1">
+  <meta name="apple-mobile-web-app-capable"
+        content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style"
+        content="default">
+  <meta name="apple-mobile-web-app-title"
+        content="CourseWizard">
+
   <!-- Preload critical resources -->
-  <link rel="preload" href="./styles.css" as="style">
-  <link rel="preload" href="./app.js" as="script">
-  <link rel="preload" href="./data.js" as="script">
+  <link rel="preload"
+        href="./styles.css"
+        as="style">
 </head>
+
 <body>
   <div class="app-container">
-    <!-- Navigation Steps -->
-    <nav class="step-navigation" id="stepNavigation" aria-label="Schedule Creation Steps">
-      <div class="step-indicator" role="tablist">
-        <div class="step active" data-step="courses" role="tab" aria-selected="true" tabindex="0" aria-controls="coursesPanel">
-          <i class="fas fa-book" aria-hidden="true"></i>
-          <span>Select Courses</span>
-          <div class="progress-indicator" aria-hidden="true"></div>
-        </div>
-        <div class="step" data-step="faculty" role="tab" aria-selected="false" tabindex="-1" aria-controls="facultyPanel">
-          <i class="fas fa-user-tie" aria-hidden="true"></i>
-          <span>Choose Faculty</span>
-          <div class="progress-indicator" aria-hidden="true"></div>
-        </div>
-        <div class="step" data-step="schedule" role="tab" aria-selected="false" tabindex="-1" aria-controls="schedulePanel">
-          <i class="fas fa-calendar-alt" aria-hidden="true"></i>
-          <span>Generate Schedule</span>
-          <div class="progress-indicator" aria-hidden="true"></div>
-        </div>
-      </div>
-      <div class="step-controls" role="group" aria-label="Navigation Controls">
-        <button id="btnBack" class="btn secondary" disabled aria-label="Go back to previous step">
-          <i class="fas fa-arrow-left" aria-hidden="true"></i> Back
-        </button>
-        <button id="btnNext" class="btn primary">
-          Next <i class="fas fa-arrow-right"></i>
-        </button>
-      </div>
-    </nav>
-
-    <!-- Sidebar -->
-    <aside class="sidebar" id="sidebar">
+    <!-- Professional Sidebar -->
+    <aside class="sidebar"
+           id="sidebar">
       <div class="sidebar-header">
         <div class="logo">
           <i class="fas fa-hat-wizard"></i>
+          <span>CourseWizard</span>
         </div>
-        <h1>CourseWizard</h1>
+        <p>Smart Schedule Planner</p>
       </div>
 
-      <!-- Course Selection Panel -->
-      <div class="sidebar-section">
-        <h3><i class="fas fa-book"></i> Select Courses</h3>
-        <div class="search-box">
-          <input type="text" id="courseSearch" placeholder="Search courses...">
-          <i class="fas fa-search"></i>
+      <div class="sidebar-content">
+        <!-- Selected Courses Display -->
+        <div class="sidebar-section"
+             id="selectedCoursesSection"
+             style="display: none;">
+          <h3>
+            <i class="fas fa-check-circle"></i>
+            Selected Courses
+          </h3>
+          <div class="selected-courses-display">
+            <div class="selected-courses-list"
+                 id="selectedCoursesList">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
         </div>
-        <div class="course-list" id="courseList">
-          <!-- Dynamically filled with course checkboxes -->
+
+        <!-- Smart Filters Section -->
+        <div class="sidebar-section">
+          <h3>
+            <i class="fas fa-filter"></i>
+            Smart Filters
+          </h3>
+
+          <!-- Time Preferences -->
+          <div class="filter-group">
+            <h4>Time Preferences</h4>
+            <div class="filter-row">
+              <label>
+                <input type="checkbox"
+                       id="noEarly">
+                No Early Classes (Before 9 AM)
+              </label>
+            </div>
+            <div class="filter-row">
+              <label>
+                <input type="checkbox"
+                       id="noLate">
+                No Late Classes (After 6 PM)
+              </label>
+            </div>
+            <div class="time-range">
+              <label>Preferred Time Range:</label>
+              <select id="preferredTimeStart"
+                      aria-label="Preferred start time">
+                <option value="">Start Time</option>
+                <option value="8">8:00 AM</option>
+                <option value="9">9:00 AM</option>
+                <option value="10">10:00 AM</option>
+                <option value="11">11:00 AM</option>
+                <option value="12">12:00 PM</option>
+              </select>
+              <select id="preferredTimeEnd"
+                      aria-label="Preferred end time">
+                <option value="">End Time</option>
+                <option value="16">4:00 PM</option>
+                <option value="17">5:00 PM</option>
+                <option value="18">6:00 PM</option>
+                <option value="19">7:00 PM</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Day Preferences -->
+          <div class="filter-group">
+            <h4>Day Preferences</h4>
+            <div class="quick-select">
+              <button id="btn4day"
+                      class="btn-small">4-Day Week</button>
+              <button id="btn5day"
+                      class="btn-small">5-Day Week</button>
+              <button id="btn6day"
+                      class="btn-small">6-Day Week</button>
+            </div>
+            <p class="help-text">4-day: ST+RA, ST+MW, or RA+MW combinations<br>
+            5-day: Any 3 combinations (e.g., ST+RA+M)<br>
+            6-day: ST+RA+MW combination</p>
+          </div>
+
+          <!-- Faculty Preferences -->
+          <div class="filter-group">
+            <h4>Faculty Preferences</h4>
+            <div class="search-box">
+              <i class="fas fa-search"></i>
+              <input type="text"
+                     id="facultySearch"
+                     placeholder="Search faculty...">
+            </div>
+            <div id="facultyToggles"
+                 class="faculty-list">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <!-- Additional Options -->
+          <div class="filter-group">
+            <h4>Additional Options</h4>
+            <div class="filter-row">
+              <label>
+                <input type="checkbox"
+                       id="avoidGaps">
+                Minimize Gaps Between Classes
+              </label>
+            </div>
+            <div class="filter-row">
+              <label>
+                <input type="checkbox"
+                       id="balancedLoad">
+                Balance Daily Course Load
+              </label>
+            </div>
+            <div class="filter-row">
+              <label>
+                Max Results:
+                <input type="number"
+                       id="maxResults"
+                       min="1"
+                       max="1000"
+                       value="50">
+              </label>
+            </div>
+          </div>
         </div>
       </div>
 
-      <!-- Smart Filters -->
-      <div class="sidebar-section">
-        <h3><i class="fas fa-filter"></i> Smart Filters</h3>
-        
-        <!-- Time Preferences -->
-        <div class="filter-group">
-          <h4>Time Preferences</h4>
-          <div class="filter-row">
-            <label><input type="checkbox" id="noEarly"> No Early Classes (Before 9 AM)</label>
-          </div>
-          <div class="filter-row">
-            <label><input type="checkbox" id="noLate"> No Late Classes (After 6 PM)</label>
-          </div>
-          <div class="time-range">
-            <label>Preferred Time Range:</label>
-            <select id="preferredTimeStart" aria-label="Preferred start time">
-              <option value="">Start Time</option>
-              <option value="8">8:00 AM</option>
-              <option value="9">9:00 AM</option>
-              <option value="10">10:00 AM</option>
-              <option value="11">11:00 AM</option>
-              <option value="12">12:00 PM</option>
-            </select>
-            <select id="preferredTimeEnd" aria-label="Preferred end time">
-              <option value="">End Time</option>
-              <option value="16">4:00 PM</option>
-              <option value="17">5:00 PM</option>
-              <option value="18">6:00 PM</option>
-              <option value="19">7:00 PM</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- Day Preferences -->
-        <div class="filter-group">
-          <h4>Day Preferences</h4>
-          <div class="day-toggles">
-            <label class="day-toggle"><input type="checkbox" value="S"> S</label>
-            <label class="day-toggle"><input type="checkbox" value="M"> M</label>
-            <label class="day-toggle"><input type="checkbox" value="T"> T</label>
-            <label class="day-toggle"><input type="checkbox" value="W"> W</label>
-            <label class="day-toggle"><input type="checkbox" value="R"> R</label>
-            <label class="day-toggle"><input type="checkbox" value="A"> A</label>
-          </div>
-          <div class="quick-select">
-            <button id="btn4day" class="btn-small">4-Day Week</button>
-            <button id="btn5day" class="btn-small">5-Day Week</button>
-          </div>
-        </div>
-
-        <!-- Faculty Preferences -->
-        <div class="filter-group">
-          <h4>Faculty Preferences</h4>
-          <div class="search-box">
-            <input type="text" id="facultySearch" placeholder="Search faculty...">
-            <i class="fas fa-search"></i>
-          </div>
-          <div id="facultyToggles" class="faculty-list">
-            <!-- Dynamically filled -->
-          </div>
-        </div>
-
-        <!-- Additional Preferences -->
-        <div class="filter-group">
-          <h4>Additional Options</h4>
-          <div class="filter-row">
-            <label><input type="checkbox" id="avoidGaps"> Minimize Gaps Between Classes</label>
-          </div>
-          <div class="filter-row">
-            <label><input type="checkbox" id="balancedLoad"> Balance Daily Course Load</label>
-          </div>
-          <div class="filter-row">
-            <label>Max Results: <input type="number" id="maxResults" min="1" max="1000" value="50"></label>
-          </div>
-        </div>
-      </div>
-
-      <!-- Action Buttons -->
+      <!-- Sidebar Actions -->
       <div class="sidebar-actions">
-        <button id="btnGenerateRoutine" class="btn primary">
-          <i class="fas fa-wand-sparkles"></i> Generate Schedule
+        <button id="selectCoursesBtn"
+                class="btn primary">
+          <i class="fas fa-plus"></i>
+          Select Courses
         </button>
-        <button id="btnReset" class="btn secondary">
-          <i class="fas fa-undo"></i> Reset Filters
+        <button id="btnGenerateRoutine"
+                class="btn primary"
+                disabled>
+          <i class="fas fa-wand-sparkles"></i>
+          Generate Schedule
+        </button>
+        <button id="btnReset"
+                class="btn secondary">
+          <i class="fas fa-undo"></i>
+          Reset All
         </button>
       </div>
     </aside>
 
-    <!-- Main Content -->
+    <!-- Main Content Area -->
     <main class="main-content">
       <header class="main-header">
-        <button id="toggleSidebar" class="btn-icon" aria-label="Toggle sidebar">
-          <i class="fas fa-bars" aria-hidden="true"></i>
-        </button>
-        <div class="view-controls">
-          <button id="btnListView" class="btn-icon active" title="List View">
-            <i class="fas fa-list"></i>
+        <div class="header-left">
+          <button id="toggleSidebar"
+                  class="btn-icon"
+                  aria-label="Toggle sidebar">
+            <i class="fas fa-bars"></i>
           </button>
-          <button id="btnGridView" class="btn-icon" title="Grid View">
-            <i class="fas fa-th"></i>
-          </button>
+          <div>
+            <h1 class="header-title">Schedule Generator</h1>
+            <p class="header-subtitle">Create your perfect class schedule</p>
+          </div>
         </div>
-        <div class="generated-info">
-          <span id="summary">Ready to create your schedule</span>
-        </div>
-        <div class="actions">
-          <button id="btnExport" class="btn-icon" title="Export Schedule">
-            <i class="fas fa-download"></i>
-          </button>
-          <button id="btnShare" class="btn-icon" title="Share Schedule">
-            <i class="fas fa-share-alt"></i>
-          </button>
+
+        <div class="header-controls">
+          <div class="view-controls">
+            <button id="btnListView"
+                    class="btn-icon active"
+                    title="List View">
+              <i class="fas fa-list"></i>
+            </button>
+            <button id="btnGridView"
+                    class="btn-icon"
+                    title="Grid View">
+              <i class="fas fa-th"></i>
+            </button>
+          </div>
+
+          <div class="generated-info">
+            <i class="fas fa-info-circle"></i>
+            <span id="summary">Ready to create your schedule</span>
+          </div>
+
+          <div class="actions">
+            <button id="btnExport"
+                    class="btn-icon"
+                    title="Export Schedule">
+              <i class="fas fa-download"></i>
+            </button>
+            <button id="btnShare"
+                    class="btn-icon"
+                    title="Share Schedule">
+              <i class="fas fa-share-alt"></i>
+            </button>
+          </div>
         </div>
       </header>
 
-      <!-- Step Panels -->
-      <div id="coursesPanel" role="tabpanel" aria-labelledby="coursesTab" class="step-panel active">
-        <div class="search-box">
-          <input type="text" id="mainCourseSearch" placeholder="Search courses..." aria-label="Search courses">
-          <i class="fas fa-search" aria-hidden="true"></i>
-        </div>
-        <div id="courseList" class="course-list" role="list">
-          <!-- Dynamically filled -->
-        </div>
-      </div>
+      <!-- Results Section -->
+      <section id="results"
+               class="results"
+               aria-live="polite">
+        <!-- Schedule cards will be inserted here -->
+      </section>
 
-      <div id="facultyPanel" role="tabpanel" aria-labelledby="facultyTab" class="step-panel">
-        <div id="facultyPreferences" class="faculty-preferences">
-          <!-- Dynamically filled -->
-        </div>
-      </div>
-
-      <div id="schedulePanel" role="tabpanel" aria-labelledby="scheduleTab" class="step-panel">
-        <section id="results" class="results" aria-live="polite">
-          <!-- schedule cards inserted here -->
-        </section>
-
-        <div id="noResults" class="no-results hidden" role="alert">
-          <i class="fas fa-magic" aria-hidden="true"></i>
-          <h2>No schedules found</h2>
-          <p>Try adjusting your filters or selecting different courses</p>
-        </div>
+      <div id="noResults"
+           class="no-results hidden"
+           role="alert">
+        <i class="fas fa-magic"></i>
+        <h2>No schedules found</h2>
+        <p>Try adjusting your filters or selecting different courses</p>
       </div>
     </main>
   </div>
 
+  <!-- Course Selection Modal -->
+  <div id="courseModal"
+       class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>
+          <i class="fas fa-book"></i>
+          Select Your Courses
+        </h2>
+        <button id="closeModal"
+                class="close-modal"
+                aria-label="Close modal">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="search-box">
+          <i class="fas fa-search"></i>
+          <input type="text"
+                 id="modalCourseSearch"
+                 placeholder="Search courses...">
+        </div>
+
+        <div class="course-filters">
+          <div class="filter-tabs">
+            <button class="filter-tab active"
+                    data-filter="all">All Courses</button>
+            <button class="filter-tab"
+                    data-filter="cse">CSE Courses</button>
+            <button class="filter-tab"
+                    data-filter="eee">EEE Courses</button>
+            <button class="filter-tab"
+                    data-filter="che">CHE Courses</button>
+            <button class="filter-tab"
+                    data-filter="eng">ENG Courses</button>
+          </div>
+        </div>
+
+        <div class="course-list-modal"
+             id="courseListModal">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <div class="selected-count">
+          <span id="selectedCount">0 courses selected</span>
+        </div>
+        <div class="modal-buttons">
+          <button id="cancelCourses"
+                  class="btn secondary">
+            <i class="fas fa-times"></i>
+            Cancel
+          </button>
+          <button id="confirmCourses"
+                  class="btn primary"
+                  disabled>
+            <i class="fas fa-check"></i>
+            Confirm Selection
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast Notifications -->
-  <div id="toast" class="toast hidden">
+  <div id="toast"
+       class="toast hidden">
     <i class="fas fa-info-circle"></i>
     <span id="toastMessage"></span>
   </div>
 
   <!-- Theme Toggle -->
-  <button id="themeToggle" class="theme-toggle" title="Toggle Theme">
+  <button id="themeToggle"
+          class="theme-toggle"
+          title="Toggle Theme">
     <i class="fas fa-moon"></i>
   </button>
 
+  <!-- Service Worker Registration -->
   <script>
-    if('serviceWorker' in navigator){
-      navigator.serviceWorker.register('service-worker.js').catch(()=>console.warn('SW register failed'));
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js').catch(() => console.warn('SW register failed'));
     }
   </script>
-  <script src="data.js"></script>
-  <script src="app.js"></script>
+
+  <!-- Application Scripts -->
+  <script src="./data.js"></script>
+  <script src="./app.js"></script>
 </body>
+
 </html>

@@ -1,3 +1,13 @@
+## Download and Install APK from GitHub Actions
+
+After a successful workflow run:
+1. Go to your repo's Actions tab
+2. Click the latest run
+3. Download the `batsched-apk` artifact
+4. On your Android phone, enable "Install from Unknown Sources" for your browser
+5. Open the downloaded APK and tap Install
+
+![Build Status](https://github.com/Tous1f/Advising/actions/workflows/android-build.yml/badge.svg)
 BatSched — On-device Advising Plan Generator
 
 What I built

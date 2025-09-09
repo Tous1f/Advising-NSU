@@ -296,3 +296,89 @@
   // initial quick render (none)
   summaryEl.textContent = 'Ready — click a button to generate plans.';
 })();
+
+// Mobile UX enhancements appended
+(function(){
+  document.addEventListener('DOMContentLoaded', () => {
+    // Haptic feedback for buttons (if supported)
+    const buttons = document.querySelectorAll('.btn');
+    if (buttons && buttons.length) {
+      buttons.forEach(btn => {
+        try {
+          if ('vibrate' in navigator) btn.addEventListener('click', () => navigator.vibrate(50));
+        } catch (e) { /* ignore */ }
+      });
+    }
+
+    // Loading state helper
+    function showLoading(buttonEl, text = 'Loading...') {
+      if (!buttonEl) return () => {};
+      const originalText = buttonEl.textContent;
+      buttonEl.textContent = text;
+      buttonEl.disabled = true;
+      return () => {
+        buttonEl.textContent = originalText;
+        buttonEl.disabled = false;
+      };
+    }
+
+    // Elements used by handlers
+    const btnPreferred = document.getElementById('btnPreferred');
+    const summaryEl = document.getElementById('summary');
+    const maxResultsEl = document.getElementById('maxResults');
+    const noEarlyEl = document.getElementById('noEarly');
+    const noLateEl = document.getElementById('noLate');
+    const filterPanel = document.getElementById('filterPanel');
+    const openFilters = document.getElementById('openFilters');
+
+    // Enhanced Preferred button behavior
+    if (btnPreferred) {
+      btnPreferred.addEventListener('click', () => {
+        const stopLoading = showLoading(btnPreferred, 'Generating...');
+        if (summaryEl) summaryEl.textContent = 'Generating preferred schedules...';
+
+        setTimeout(() => {
+          let list = [];
+          if (typeof generate === 'function') {
+            list = generate({
+              usePreferences: true,
+              maxResults: Number(maxResultsEl?.value || 200),
+              noEarly: !!(noEarlyEl && noEarlyEl.checked),
+              noLate: !!(noLateEl && noLateEl.checked)
+            });
+          }
+
+          if (typeof renderSchedules === 'function') renderSchedules(list);
+          stopLoading();
+        }, 100);
+      });
+    }
+
+    // Close filter panel when clicking outside
+    document.addEventListener('click', (e) => {
+      if (filterPanel && openFilters && !filterPanel.contains(e.target) && !openFilters.contains(e.target)) {
+        if (!filterPanel.classList.contains('hidden')) filterPanel.classList.add('hidden');
+      }
+    });
+
+    // Swipe gesture to close filter panel
+    if (filterPanel) {
+      let touchStartX = 0;
+      let touchStartY = 0;
+      filterPanel.addEventListener('touchstart', (e) => {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+      });
+
+      filterPanel.addEventListener('touchend', (e) => {
+        const touchEndX = e.changedTouches[0].clientX;
+        const touchEndY = e.changedTouches[0].clientY;
+        const deltaX = touchEndX - touchStartX;
+        const deltaY = touchEndY - touchStartY;
+        if (deltaX > 50 && Math.abs(deltaY) < 100) {
+          filterPanel.classList.add('hidden');
+        }
+      });
+    }
+  });
+})();

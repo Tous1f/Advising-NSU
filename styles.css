@@ -11,6 +11,9 @@
   --warning: #f59e0b;
   --error: #ef4444;
   --shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+  --s21-safe-top: env(safe-area-inset-top, 44px);
+  --s21-safe-bottom: env(safe-area-inset-bottom, 34px);
+  --s21-touch-target: 48px;
 }
 * {
   box-sizing: border-box;
@@ -26,22 +29,27 @@ body {
   max-width: 760px;
   margin: 0 auto;
   padding: 14px;
+  padding-bottom: calc(var(--s21-safe-bottom) + 20px);
 }
 .app-header {
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 10px 6px;
+  position: sticky;
+  top: 0;
+  background: linear-gradient(180deg, rgba(5,6,10,0.95), rgba(11,15,21,0.9));
+  backdrop-filter: blur(20px);
+  z-index: 100;
+  border-radius: 0 0 16px 16px;
+  margin: -14px -14px 14px -14px;
+  padding: 16px 20px;
 }
 .logo {
-  width: 44px;
-  height: 44px;
-  border-radius: 8px;
-  background: linear-gradient(180deg, #111827, #0b1220);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid rgba(255, 255, 255, 0.04);
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 .title {
   font-weight: 700;
@@ -57,9 +65,17 @@ body {
   background: var(--card);
   border: 1px solid var(--border);
   color: var(--accent);
-  padding: 8px 12px;
-  border-radius: 10px;
+  padding: 14px 20px;
+  border-radius: 12px;
   font-weight: 600;
+  min-height: var(--s21-touch-target);
+  touch-action: manipulation; /* Prevents zoom on double tap */
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.btn:active {
+  transform: scale(0.98);
+  background: rgba(255, 212, 100, 0.1);
 }
 .btn.small {
   padding: 6px 8px;
@@ -67,6 +83,11 @@ body {
 }
 .controls {
   padding: 12px 6px;
+}
+.btn-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
 }
 .btn-row {
   display: flex;
@@ -86,10 +107,10 @@ body {
 }
 .card {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
-  border-radius: 12px;
-  padding: 12px;
+  border-radius: 16px;
+  padding: 16px;
   border: 1px solid rgba(255, 255, 255, 0.03);
-  box-shadow: var(--shadow);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.7);
 }
 .card h4 {
   margin: 0 0 6px 0;
@@ -117,12 +138,16 @@ body {
 .filters {
   position: fixed;
   right: 14px;
-  top: 80px;
+  top: calc(var(--s21-safe-top) + 80px);
   background: #071018;
-  padding: 12px;
-  border-radius: 10px;
+  padding: 20px;
+  border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.04);
-  width: 220px;
+  width: min(320px, calc(100vw - 28px));
+  max-height: calc(100vh - var(--s21-safe-top) - var(--s21-safe-bottom) - 140px);
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7);
+  z-index: 1000;
 }
 .filters.hidden {
   display: none;
@@ -191,10 +216,13 @@ body {
 .course-block {
   position: relative;
   color: #e6eef8;
-  padding: 6px;
-  border-radius: 6px;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+  padding: 10px;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
   overflow: hidden;
+  background: linear-gradient(135deg, rgba(255,212,64,0.12), rgba(255,212,64,0.04));
+  border: 1px solid rgba(255,212,64,0.15);
+  min-height: 56px;
 }
 .course-block .meta {
   font-size: 11px;
@@ -245,5 +273,23 @@ body {
 @media (min-width: 720px) {
   .grid {
     grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media (max-width: 480px) {
+  .grid {
+    grid-template-columns: 1fr; /* Single column on small screens */
+  }
+  
+  .btn-row {
+    flex-direction: column; /* Stack buttons vertically on small screens */
+    gap: 6px;
+  }
+  
+  .app-header {
+    padding: 12px 6px;
+  }
+  
+  .title {
+    font-size: 18px; /* Slightly smaller on mobile */
   }
 }

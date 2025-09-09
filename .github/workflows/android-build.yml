@@ -8,6 +8,8 @@ on:
 jobs:
   build-android:
     runs-on: ubuntu-latest
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -17,28 +19,25 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+          cache: gradle
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-
-      - name: Set up Android SDK
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-          cache: 'gradle'
+          cache: npm
+          cache-dependency-path: app/package-lock.json
           
       - name: Install Android SDK
         run: |
-          mkdir -p ${ANDROID_HOME}/cmdline-tools
-          wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip
-          unzip commandlinetools-linux-9477386_latest.zip
-          mv cmdline-tools ${ANDROID_HOME}/cmdline-tools/latest
+          mkdir -p $ANDROID_HOME/cmdline-tools
+          wget -q https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip
+          unzip -q commandlinetools-linux-9477386_latest.zip
+          mv cmdline-tools $ANDROID_HOME/cmdline-tools/latest
           rm commandlinetools-linux-9477386_latest.zip
-          yes | ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager --licenses || true
-          ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager "platform-tools" "build-tools;33.0.2" "platforms;android-33"
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1
+          echo "Installing Android SDK packages..."
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --install "platform-tools" "build-tools;33.0.2" "platforms;android-33" > /dev/null
 
       - name: Install npm dependencies
         run: npm ci || npm install

@@ -29,6 +29,35 @@
 </head>
 <body>
   <div class="app-container">
+    <!-- Navigation Steps -->
+    <nav class="step-navigation" id="stepNavigation" aria-label="Schedule Creation Steps">
+      <div class="step-indicator" role="tablist">
+        <div class="step active" data-step="courses" role="tab" aria-selected="true" tabindex="0" aria-controls="coursesPanel">
+          <i class="fas fa-book" aria-hidden="true"></i>
+          <span>Select Courses</span>
+          <div class="progress-indicator" aria-hidden="true"></div>
+        </div>
+        <div class="step" data-step="faculty" role="tab" aria-selected="false" tabindex="-1" aria-controls="facultyPanel">
+          <i class="fas fa-user-tie" aria-hidden="true"></i>
+          <span>Choose Faculty</span>
+          <div class="progress-indicator" aria-hidden="true"></div>
+        </div>
+        <div class="step" data-step="schedule" role="tab" aria-selected="false" tabindex="-1" aria-controls="schedulePanel">
+          <i class="fas fa-calendar-alt" aria-hidden="true"></i>
+          <span>Generate Schedule</span>
+          <div class="progress-indicator" aria-hidden="true"></div>
+        </div>
+      </div>
+      <div class="step-controls" role="group" aria-label="Navigation Controls">
+        <button id="btnBack" class="btn secondary" disabled aria-label="Go back to previous step">
+          <i class="fas fa-arrow-left" aria-hidden="true"></i> Back
+        </button>
+        <button id="btnNext" class="btn primary">
+          Next <i class="fas fa-arrow-right"></i>
+        </button>
+      </div>
+    </nav>
+
     <!-- Sidebar -->
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-header">
@@ -65,7 +94,7 @@
           </div>
           <div class="time-range">
             <label>Preferred Time Range:</label>
-            <select id="preferredTimeStart">
+            <select id="preferredTimeStart" aria-label="Preferred start time">
               <option value="">Start Time</option>
               <option value="8">8:00 AM</option>
               <option value="9">9:00 AM</option>
@@ -73,7 +102,7 @@
               <option value="11">11:00 AM</option>
               <option value="12">12:00 PM</option>
             </select>
-            <select id="preferredTimeEnd">
+            <select id="preferredTimeEnd" aria-label="Preferred end time">
               <option value="">End Time</option>
               <option value="16">4:00 PM</option>
               <option value="17">5:00 PM</option>
@@ -141,8 +170,8 @@
     <!-- Main Content -->
     <main class="main-content">
       <header class="main-header">
-        <button id="toggleSidebar" class="btn-icon">
-          <i class="fas fa-bars"></i>
+        <button id="toggleSidebar" class="btn-icon" aria-label="Toggle sidebar">
+          <i class="fas fa-bars" aria-hidden="true"></i>
         </button>
         <div class="view-controls">
           <button id="btnListView" class="btn-icon active" title="List View">
@@ -165,14 +194,33 @@
         </div>
       </header>
 
-      <section id="results" class="results">
-        <!-- schedule cards inserted here -->
-      </section>
+      <!-- Step Panels -->
+      <div id="coursesPanel" role="tabpanel" aria-labelledby="coursesTab" class="step-panel active">
+        <div class="search-box">
+          <input type="text" id="courseSearch" placeholder="Search courses..." aria-label="Search courses">
+          <i class="fas fa-search" aria-hidden="true"></i>
+        </div>
+        <div id="courseList" class="course-list" role="list">
+          <!-- Dynamically filled -->
+        </div>
+      </div>
 
-      <div id="noResults" class="no-results hidden">
-        <i class="fas fa-magic"></i>
-        <h2>No schedules found</h2>
-        <p>Try adjusting your filters or selecting different courses</p>
+      <div id="facultyPanel" role="tabpanel" aria-labelledby="facultyTab" class="step-panel">
+        <div id="facultyPreferences" class="faculty-preferences">
+          <!-- Dynamically filled -->
+        </div>
+      </div>
+
+      <div id="schedulePanel" role="tabpanel" aria-labelledby="scheduleTab" class="step-panel">
+        <section id="results" class="results" aria-live="polite">
+          <!-- schedule cards inserted here -->
+        </section>
+
+        <div id="noResults" class="no-results hidden" role="alert">
+          <i class="fas fa-magic" aria-hidden="true"></i>
+          <h2>No schedules found</h2>
+          <p>Try adjusting your filters or selecting different courses</p>
+        </div>
       </div>
     </main>
   </div>

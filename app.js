@@ -1,22 +1,11 @@
-// BatSched app logic
-(function(){
-  // DOM Elements
-  const sidebar = document.getElementById('sidebar');
-  const toggleSidebar = document.getElementById('toggleSidebar');
-  const courseSearch = document.getElementById('courseSearch');
-  const facultySearch = document.getElementById('facultySearch');
-  const btnGenerateRoutine = document.getElementById('btnGenerateRoutine');
-  const btnReset = document.getElementById('btnReset');
-  const themeToggle = document.getElementById('themeToggle');
-  const toast = document.getElementById('toast');
-  const toastMessage = document.getElementById('toastMessage');
-  const btnListView = document.getElementById('btnListView');
-  const btnGridView = document.getElementById('btnGridView');
-  const resultsSection = document.getElementById('results');
-  const noResults = document.getElementById('noResults');
+// CourseWizard - Advanced Schedule Generation Logic
+// CourseWizard - Advanced Schedule Generation System
+window.addEventListener('load', function() {
+  'use strict';
   
-  // State Management
-  const state = {
+  // Application state
+  let state = {
+    currentStep: 'courses',
     selectedCourses: new Set(),
     selectedFaculty: new Map(),
     filters: {
@@ -25,81 +14,581 @@
       days: new Set(),
       avoidGaps: false,
       balancedLoad: false,
-      maxResults: 50
+      maxResults: 50,
+      minimumGap: 15
     },
-    view: 'list',
-    darkMode: false
+    view: localStorage.getItem('view') || 'list',
+    darkMode: localStorage.getItem('darkMode') === 'true',
+    schedules: [],
+    loading: false
+  };
+  
+  // UI Elements cache
+  let elements = {
+    return new Proxy({
+      sidebar: document.getElementById('sidebar'),
+      stepNavigation: document.getElementById('stepNavigation'),
+      toggleSidebar: document.getElementById('toggleSidebar'),
+      courseSearch: document.getElementById('courseSearch'),
+      facultySearch: document.getElementById('facultySearch'),
+      btnGenerateRoutine: document.getElementById('btnGenerateRoutine'),
+      btnReset: document.getElementById('btnReset'),
+      themeToggle: document.getElementById('themeToggle'),
+      btnNext: document.getElementById('btnNext'),
+      btnBack: document.getElementById('btnBack'),
+      btnListView: document.getElementById('btnListView'),
+      btnGridView: document.getElementById('btnGridView'),
+      resultsSection: document.getElementById('results'),
+      noResults: document.getElementById('noResults'),
+      toast: document.getElementById('toast'),
+      toastMessage: document.getElementById('toastMessage'),
+      facultyToggles: document.getElementById('facultyToggles'),
+      courseList: document.getElementById('courseList')
+    }, {
+      get(target, prop) {
+        const element = target[prop];
+        if (!element) {
+          console.error(`Missing DOM element: ${prop}`);
+          return document.createElement('div');
+        }
+        return element;
+      }
+    });
+  }
   };
 
-  // Utility Functions
-  function showToast(message, type = 'info') {
-    toastMessage.textContent = message;
-    toast.className = `toast ${type}`;
-    setTimeout(() => toast.classList.add('hidden'), 3000);
+  // Core Schedule Generator Class
+  class ScheduleGenerator {
+    constructor(state) {
+      this.courses = COURSES;
+      this.state = state;
+      this.preferences = {
+        avoidGaps: state.filters.avoidGaps,
+        balancedLoad: state.filters.balancedLoad,
+        preferredTimeStart: state.filters.timeStart,
+        preferredTimeEnd: state.filters.timeEnd,
+        preferredDays: state.filters.days,
+        facultyPreferences: state.selectedFaculty
+      };
+    }
+
+    validateTimeFormat(timeStr) {
+      return /^\d{2}:\d{2} [AP]M - \d{2}:\d{2} [AP]M$/.test(timeStr);
+    }
+
+    parseTimeRange(timeStr) {
+      if (!this.validateTimeFormat(timeStr)) {
+        console.error('Invalid time format:', timeStr);
+        return null;
+      }
+      return parseRange(timeStr);
+    }
+
+    conflicts(a, b) {
+      // Input validation
+      if (!a || !b || !a.days || !b.days || !a.time || !b.time) {
+        console.error('Invalid course data:', { a, b });
+        return true;
+      }
+
+      try {
+        // Day overlap check
+        const daysA = new Set([...daysSet(a.days)]);
+        const daysB = new Set([...daysSet(b.days)]);
+        const commonDays = [...daysA].filter(d => daysB.has(d));
+        if (commonDays.length === 0) return false;
+
+        // Time parsing and validation
+        const ra = this.parseTimeRange(a.time);
+        const rb = this.parseTimeRange(b.time);
+        
+        if (!ra || !rb) {
+          console.error('Invalid time format:', { a: a.time, b: b.time });
+          return true;
+        }
+
+        // Gap checking with configurable minimum
+        const minGap = this.preferences.minimumGap || 15; // minutes
+        if (this.preferences.avoidGaps) {
+          const gapBetweenClasses = Math.min(
+            Math.abs(ra.end - rb.start),
+            Math.abs(rb.end - ra.start)
+          );
+          
+          if (gapBetweenClasses < minGap) {
+            console.debug(`Gap too small (${gapBetweenClasses} min) between:`, 
+              { course1: a.course, time1: a.time, course2: b.course, time2: b.time });
+            return true;
+          }
+        }
+
+        // Actual time overlap check
+        const hasOverlap = Math.max(ra.start, rb.start) < Math.min(ra.end, rb.end);
+        
+        if (hasOverlap) {
+          console.debug('Time overlap detected between:', 
+            { course1: a.course, time1: a.time, course2: b.course, time2: b.time });
+        }
+        
+        return hasOverlap;
+      } catch (error) {
+        console.error('Error in conflict detection:', error, { course1: a, course2: b });
+        throw new Error(`Schedule conflict error: ${error.message}`);
+      }
+    }
+
+    validateSchedule(schedule) {
+      // Check for required course pairs
+      const courseSet = new Set(schedule.map(c => c.course));
+      const requiredPairs = [
+        ['EEE111', 'EEE111L']
+      ];
+
+      for (const [course1, course2] of requiredPairs) {
+        if (courseSet.has(course1) || courseSet.has(course2)) {
+          if (!courseSet.has(course1) || !courseSet.has(course2)) {
+            return false;
+          }
+        }
+      }
+
+      // Check time conflicts
+      for (let i = 0; i < schedule.length; i++) {
+        for (let j = i + 1; j < schedule.length; j++) {
+          if (this.conflicts(schedule[i], schedule[j])) {
+            return false;
+          }
+        }
+      }
+
+      // Check preferred time range
+      if (this.preferences.preferredTimeStart || this.preferences.preferredTimeEnd) {
+        for (const course of schedule) {
+          const time = this.parseTimeRange(course.time);
+          if (!time) return false;
+          
+          if (this.preferences.preferredTimeStart && 
+              time.start < this.preferences.preferredTimeStart * 60) {
+            return false;
+          }
+          if (this.preferences.preferredTimeEnd && 
+              time.end > this.preferences.preferredTimeEnd * 60) {
+            return false;
+          }
+        }
+      }
+
+      // Check preferred days
+      if (this.preferences.preferredDays.size > 0) {
+        for (const course of schedule) {
+          const courseDays = [...daysSet(course.days)];
+          if (!courseDays.some(day => this.preferences.preferredDays.has(day))) {
+            return false;
+          }
+        }
+      }
+
+      // Validate course load balance
+      if (this.preferences.balancedLoad) {
+        const dailyLoad = {};
+        for (const course of schedule) {
+          for (const day of course.days) {
+            dailyLoad[day] = (dailyLoad[day] || 0) + 1;
+          }
+        }
+        const loads = Object.values(dailyLoad);
+        const maxLoad = Math.max(...loads);
+        const minLoad = Math.min(...loads);
+        if (maxLoad - minLoad > 2) {
+          return false;
+        }
+      }
+
+      return true;
+    }
+
+    calculateScheduleScore(schedule) {
+      let score = 100; // Base score
+
+      // Preferred faculty bonus
+      for (const course of schedule) {
+        if (this.preferences.facultyPreferences.get(course.course)?.has(course.faculty)) {
+          score += 20;
+        }
+      }
+
+      // Time distribution penalties
+      const timeSlots = schedule.map(c => this.parseTimeRange(c.time)).filter(Boolean);
+      const gaps = [];
+      for (let i = 0; i < timeSlots.length - 1; i++) {
+        for (let j = i + 1; j < timeSlots.length; j++) {
+          const gap = Math.abs(timeSlots[i].end - timeSlots[j].start);
+          if (gap > 0 && gap < 60) {
+            gaps.push(gap);
+          }
+        }
+      }
+      score -= gaps.length * 5;
+
+      // Daily load balance score
+      const dailyLoad = {};
+      for (const course of schedule) {
+        for (const day of course.days) {
+          dailyLoad[day] = (dailyLoad[day] || 0) + 1;
+        }
+      }
+      const loads = Object.values(dailyLoad);
+      const variance = loads.reduce((acc, val) => 
+        acc + Math.pow(val - (loads.reduce((a, b) => a + b) / loads.length), 2), 0
+      ) / loads.length;
+      score -= variance * 10;
+
+      return Math.max(0, score);
+    }
+
+    generateSchedules() {
+      this.state.loading = true;
+      const results = [];
+      const maxResults = this.state.filters.maxResults || 50;
+      const requiredCourses = [...this.state.selectedCourses];
+      
+      // Filter sections based on preferences
+      const selectedSections = this.courses.filter(c => 
+        requiredCourses.includes(c.course) &&
+        (!this.state.selectedFaculty.get(c.course)?.size || 
+         this.state.selectedFaculty.get(c.course).has(c.faculty))
+      );
+
+      const backtrack = (courseIndex, currentSchedule) => {
+        if (results.length >= maxResults) return;
+        
+        if (courseIndex === requiredCourses.length) {
+          if (this.validateSchedule(currentSchedule)) {
+            const score = this.calculateScheduleScore(currentSchedule);
+            // Insert schedule in sorted order by score
+            const insertIndex = results.findIndex(r => r.score < score);
+            if (insertIndex === -1) {
+              results.push({ schedule: [...currentSchedule], score });
+            } else {
+              results.splice(insertIndex, 0, { schedule: [...currentSchedule], score });
+            }
+            if (results.length > maxResults) {
+              results.pop();
+            }
+          }
+          return;
+        }
+
+        const currentCourse = requiredCourses[courseIndex];
+        const sections = selectedSections.filter(s => s.course === currentCourse);
+
+        for (const section of sections) {
+          if (currentSchedule.every(c => !this.conflicts(c, section))) {
+            currentSchedule.push(section);
+            backtrack(courseIndex + 1, currentSchedule);
+            currentSchedule.pop();
+          }
+        }
+      };
+
+      backtrack(0, []);
+      this.state.loading = false;
+      return results.map(r => r.schedule);
+    }
   }
 
-  function toggleTheme() {
-    state.darkMode = !state.darkMode;
-    document.body.classList.toggle('dark-theme');
+  // Reactive State Management
+  class AppState {
+    constructor() {
+      this._state = {
+        currentStep: 'courses',
+        selectedCourses: new Set(),
+        selectedFaculty: new Map(),
+        filters: {
+          timeStart: null,
+          timeEnd: null,
+          days: new Set(),
+          avoidGaps: false,
+          balancedLoad: false,
+          maxResults: 50,
+          minimumGap: 15
+        },
+        view: localStorage.getItem('view') || 'list',
+        darkMode: localStorage.getItem('darkMode') === 'true',
+        schedules: [],
+        loading: false
+      };
+      
+      this._observers = new Map();
+      this._scheduleGenerator = null;
+      this.initializeFromStorage();
+    }
+
+    // State access and mutation
+    get state() { return {...this._state}; }
+    
+    setState(newState, notify = true) {
+      const oldState = {...this._state};
+      this._state = {...this._state, ...newState};
+      
+      if (notify) {
+        this.notifyObservers(oldState);
+      }
+      this.persistToStorage();
+    }
+
+    // Observer pattern implementation
+    subscribe(key, callback) {
+      if (!this._observers.has(key)) {
+        this._observers.set(key, new Set());
+      }
+      this._observers.get(key).add(callback);
+      
+      // Initial call with current state
+      callback(this._state);
+      
+      return () => this.unsubscribe(key, callback);
+    }
+
+    unsubscribe(key, callback) {
+      if (this._observers.has(key)) {
+        this._observers.get(key).delete(callback);
+      }
+    }
+
+    notifyObservers(oldState) {
+      for (const [key, observers] of this._observers) {
+        for (const callback of observers) {
+          callback(this._state, oldState);
+        }
+      }
+    }
+
+    // Storage management
+    initializeFromStorage() {
+      try {
+        const storedFilters = JSON.parse(localStorage.getItem('filters'));
+        const storedCourses = JSON.parse(localStorage.getItem('selectedCourses'));
+        const storedFaculty = JSON.parse(localStorage.getItem('selectedFaculty'));
+        
+        if (storedFilters) this._state.filters = {...this._state.filters, ...storedFilters};
+        if (storedCourses) this._state.selectedCourses = new Set(storedCourses);
+        if (storedFaculty) this._state.selectedFaculty = new Map(storedFaculty);
+      } catch (error) {
+        console.warn('Error loading from storage:', error);
+      }
+    }
+
+    persistToStorage() {
+      try {
+        localStorage.setItem('filters', JSON.stringify(this._state.filters));
+        localStorage.setItem('selectedCourses', 
+          JSON.stringify([...this._state.selectedCourses]));
+        localStorage.setItem('selectedFaculty', 
+          JSON.stringify([...this._state.selectedFaculty]));
+        localStorage.setItem('view', this._state.view);
+        localStorage.setItem('darkMode', this._state.darkMode);
+      } catch (error) {
+        console.warn('Error saving to storage:', error);
+      }
+    }
+
+    // Schedule generation
+    initScheduleGenerator() {
+      this._scheduleGenerator = new ScheduleGenerator(this._state);
+    }
+
+    generateSchedules() {
+      if (!this._scheduleGenerator) {
+        this.initScheduleGenerator();
+      }
+      return this._scheduleGenerator.generateSchedules();
+    }
+  }
+
+  // Initialize global state
+  const appState = new AppState();
+
+  // DOM Elements with error checking
+  const elements = new Proxy({
+    sidebar: document.getElementById('sidebar'),
+    stepNavigation: document.getElementById('stepNavigation'),
+    toggleSidebar: document.getElementById('toggleSidebar'),
+    courseSearch: document.getElementById('courseSearch'),
+    facultySearch: document.getElementById('facultySearch'),
+    btnGenerateRoutine: document.getElementById('btnGenerateRoutine'),
+    btnReset: document.getElementById('btnReset'),
+    themeToggle: document.getElementById('themeToggle'),
+    btnNext: document.getElementById('btnNext'),
+    btnBack: document.getElementById('btnBack'),
+    btnListView: document.getElementById('btnListView'),
+    btnGridView: document.getElementById('btnGridView'),
+    resultsSection: document.getElementById('results'),
+    noResults: document.getElementById('noResults'),
+    toast: document.getElementById('toast'),
+    toastMessage: document.getElementById('toastMessage')
+  }, {
+    get(target, prop) {
+      const element = target[prop];
+      if (!element) {
+        console.error(`Missing DOM element: ${prop}`);
+        return document.createElement('div'); // Fallback
+      }
+      return element;
+    }
+  });
+  // Utility Functions with Error Handling
+  class UIManager {
+    static showToast(message, type = 'info') {
+      try {
+        elements.toastMessage.textContent = message;
+        elements.toast.className = `toast ${type} visible`;
+        setTimeout(() => {
+          elements.toast.classList.remove('visible');
+          elements.toast.classList.add('hidden');
+        }, 3000);
+      } catch (error) {
+        console.error('Error showing toast:', error);
+      }
+    }
+
+    static toggleTheme() {
+      try {
+        const newDarkMode = !appState.state.darkMode;
+        appState.setState({ darkMode: newDarkMode });
+        document.body.classList.toggle('dark-theme', newDarkMode);
+        elements.themeToggle.setAttribute('aria-pressed', String(newDarkMode));
+        elements.themeToggle.setAttribute('aria-label', 
+          `Switch to ${newDarkMode ? 'light' : 'dark'} theme`);
+      } catch (error) {
+        console.error('Error toggling theme:', error);
+      }
+    }
+
+    static setView(view) {
+      try {
+        appState.setState({ view });
+        elements.btnListView.classList.toggle('active', view === 'list');
+        elements.btnGridView.classList.toggle('active', view === 'grid');
+        elements.resultsSection.classList.toggle('grid-view', view === 'grid');
+      } catch (error) {
+        console.error('Error setting view:', error);
+      }
+    }
+
+    static updateLoadingState(loading) {
+      try {
+        elements.btnGenerateRoutine.classList.toggle('loading', loading);
+        elements.btnGenerateRoutine.disabled = loading;
+        elements.btnGenerateRoutine.innerHTML = loading ? 
+          '<i class="fas fa-spinner fa-spin"></i> Generating...' :
+          '<i class="fas fa-wand-sparkles"></i> Generate Schedule';
+      } catch (error) {
+        console.error('Error updating loading state:', error);
+      }
+    }
+  }
+
+  // Initialize UI State
+  document.body.classList.toggle('dark-theme', appState.state.darkMode);
     localStorage.setItem('darkMode', state.darkMode);
     themeToggle.innerHTML = state.darkMode ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
   }
 
-  function filterCourses(searchTerm) {
-    const terms = searchTerm.toLowerCase().split(' ');
-    return COURSES.filter(course => {
-      const courseText = `${course.course} ${course.faculty} Section ${course.section}`.toLowerCase();
-      return terms.every(term => courseText.includes(term));
-    });
-  }
+  // Event Handlers and UI Logic
+  // Course Management System
+  class CourseManager {
+    static filterCourses(searchTerm) {
+      if (!searchTerm) return COURSES;
+      
+      const terms = searchTerm.toLowerCase().split(' ');
+      return COURSES.filter(course => {
+        const courseText = `${course.course} ${course.faculty} Section ${course.section}`.toLowerCase();
+        return terms.every(term => courseText.includes(term));
+      });
+    }
 
-  function updateCourseList() {
-    const searchTerm = courseSearch.value;
-    const filteredCourses = searchTerm ? filterCourses(searchTerm) : COURSES;
-    const uniqueCourses = [...new Set(filteredCourses.map(c => c.course))];
-    
-    const courseList = document.getElementById('courseList');
-    courseList.innerHTML = uniqueCourses.map(course => `
-      <div class="course-option">
-        <input type="checkbox" id="course_${course}" 
-               ${state.selectedCourses.has(course) ? 'checked' : ''}
-               data-course="${course}">
-        <label for="course_${course}">
-          <span class="course-code">${course}</span>
-          <span class="course-sections">${COURSES.filter(c => c.course === course).length} sections</span>
-        </label>
-      </div>
-    `).join('');
-  }
+    static updateCourseList() {
+      try {
+        const searchTerm = elements.courseSearch.value;
+        const filteredCourses = this.filterCourses(searchTerm);
+        const uniqueCourses = [...new Set(filteredCourses.map(c => c.course))];
+        
+        const courseList = document.getElementById('courseList');
+        if (!courseList) {
+          console.error('Course list element not found');
+          return;
+        }
 
-  function updateFacultyList() {
-    const searchTerm = facultySearch.value.toLowerCase();
-    const facultyList = document.getElementById('facultyToggles');
-    
-    facultyList.innerHTML = '';
-    state.selectedCourses.forEach(course => {
-      const courseFaculty = [...new Set(COURSES.filter(c => c.course === course).map(c => c.faculty))];
-      const filteredFaculty = searchTerm ? 
-        courseFaculty.filter(f => f.toLowerCase().includes(searchTerm)) : 
-        courseFaculty;
-
-      if (filteredFaculty.length > 0) {
-        const courseGroup = document.createElement('div');
-        courseGroup.className = 'faculty-group';
-        courseGroup.innerHTML = `
-          <h4>${course}</h4>
-          ${filteredFaculty.map(faculty => `
-            <div class="faculty-option">
-              <input type="checkbox" id="faculty_${course}_${faculty}"
-                     ${state.selectedFaculty.get(course)?.has(faculty) ? 'checked' : ''}
-                     data-course="${course}" data-faculty="${faculty}">
-              <label for="faculty_${course}_${faculty}">${faculty}</label>
-            </div>
-          `).join('')}
-        `;
-        facultyList.appendChild(courseGroup);
+        courseList.innerHTML = uniqueCourses.map(course => `
+          <div class="course-option" role="checkbox" aria-checked="${appState.state.selectedCourses.has(course)}">
+            <input type="checkbox" id="course_${course}" 
+                   ${appState.state.selectedCourses.has(course) ? 'checked' : ''}
+                   data-course="${course}"
+                   aria-label="Select ${course}">
+            <label for="course_${course}">
+              <span class="course-code">${course}</span>
+              <span class="course-sections">${COURSES.filter(c => c.course === course).length} sections</span>
+            </label>
+          </div>
+        `).join('');
+      } catch (error) {
+        console.error('Error updating course list:', error);
+        UIManager.showToast('Error updating course list', 'error');
       }
-    });
+    }
+
+    static updateFacultyList() {
+      try {
+        const searchTerm = elements.facultySearch.value.toLowerCase();
+        const facultyList = elements.facultyToggles;
+        
+        if (!facultyList) {
+          console.error('Faculty list element not found');
+          return;
+        }
+
+        facultyList.innerHTML = '';
+        const { selectedCourses, selectedFaculty } = appState.state;
+        
+        selectedCourses.forEach(course => {
+          const courseFaculty = [...new Set(
+            COURSES.filter(c => c.course === course)
+              .map(c => c.faculty)
+          )];
+          
+          const filteredFaculty = searchTerm ? 
+            courseFaculty.filter(f => f.toLowerCase().includes(searchTerm)) : 
+            courseFaculty;
+
+          if (filteredFaculty.length > 0) {
+            const courseGroup = document.createElement('div');
+            courseGroup.className = 'faculty-group';
+            courseGroup.setAttribute('role', 'group');
+            courseGroup.setAttribute('aria-label', `Faculty for ${course}`);
+            
+            courseGroup.innerHTML = `
+              <h4>${course}</h4>
+              ${filteredFaculty.map(faculty => `
+                <div class="faculty-option" role="checkbox" 
+                     aria-checked="${selectedFaculty.get(course)?.has(faculty) || false}">
+                  <input type="checkbox" id="faculty_${course}_${faculty}"
+                         ${selectedFaculty.get(course)?.has(faculty) ? 'checked' : ''}
+                         data-course="${course}" 
+                         data-faculty="${faculty}"
+                         aria-label="Select ${faculty} for ${course}">
+                  <label for="faculty_${course}_${faculty}">${faculty}</label>
+                </div>
+              `).join('')}
+            `;
+            facultyList.appendChild(courseGroup);
+          }
+        });
+      } catch (error) {
+        console.error('Error updating faculty list:', error);
+        UIManager.showToast('Error updating faculty list', 'error');
+      }
+    }
   }
 
   function resetFilters() {
@@ -246,19 +735,171 @@
   }
 
   function parseRange(str){
-    const [a,b] = str.split(' - ');
-    return { start: timeToMinutes(a), end: timeToMinutes(b) };
+    try {
+      const [a,b] = str.split(' - ');
+      return { start: timeToMinutes(a), end: timeToMinutes(b) };
+    } catch (err) {
+      console.error('Error parsing time range:', err);
+      return null;
+    }
+  }
+
+  // Convert days string to Set
+  function daysSet(daysStr) {
+    return new Set(daysStr.split(''));
   }
 
   function daysSet(daysStr){ return new Set(daysStr.split('')); }
 
-  function conflicts(a,b){
-    const daysA = [...daysSet(a.days)];
-    const daysB = [...daysSet(b.days)];
-    const common = daysA.filter(d=>daysB.includes(d));
-    if(common.length===0) return false;
-    const ra = parseRange(a.time); const rb = parseRange(b.time);
-    return Math.max(ra.start, rb.start) < Math.min(ra.end, rb.end);
+  // Schedule Validation and Optimization
+  class ScheduleValidator {
+    static validateTimeString(timeStr) {
+      return /^\d{2}:\d{2} [AP]M - \d{2}:\d{2} [AP]M$/.test(timeStr);
+    }
+
+    static validateDayString(dayStr) {
+      return /^[SMTWRAF]+$/.test(dayStr);
+    }
+
+    static conflicts(a, b) {
+      // Validate inputs
+      if (!this.validateTimeString(a.time) || !this.validateTimeString(b.time)) {
+        throw new Error('Invalid time format');
+      }
+      if (!this.validateDayString(a.days) || !this.validateDayString(b.days)) {
+        throw new Error('Invalid days format');
+      }
+
+      const daysA = [...daysSet(a.days)];
+      const daysB = [...daysSet(b.days)];
+      const common = daysA.filter(d => daysB.includes(d));
+      
+      if (common.length === 0) return false;
+      
+      try {
+        const ra = parseRange(a.time);
+        const rb = parseRange(b.time);
+        return Math.max(ra.start, rb.start) < Math.min(ra.end, rb.end);
+      } catch (e) {
+        console.error('Time parsing error:', e);
+        return true; // Assume conflict on parsing error
+      }
+    }
+
+    static validateSchedule(schedule) {
+      const errors = [];
+      const labs = new Map();
+      const theories = new Map();
+      let totalCredits = 0;
+
+      // Group labs and theory courses
+      schedule.forEach(course => {
+        if (course.course.endsWith('L')) {
+          const mainCourse = course.course.slice(0, -1);
+          labs.set(mainCourse, course);
+        } else {
+          theories.set(course.course, course);
+        }
+      });
+
+      // Validate lab-theory pairs
+      labs.forEach((lab, mainCourse) => {
+        if (!theories.has(mainCourse)) {
+          errors.push(`Lab ${lab.course} found without corresponding theory course ${mainCourse}`);
+        }
+      });
+
+      // Check time conflicts
+      for (let i = 0; i < schedule.length; i++) {
+        for (let j = i + 1; j < schedule.length; j++) {
+          if (this.conflicts(schedule[i], schedule[j])) {
+            errors.push(`Time conflict between ${schedule[i].course} and ${schedule[j].course}`);
+          }
+        }
+      }
+
+      // Validate credit hours (assuming each course is 3 credits)
+      totalCredits = schedule.reduce((total, course) => total + (course.course.endsWith('L') ? 1 : 3), 0);
+      if (totalCredits > 18) {
+        errors.push(`Total credits (${totalCredits}) exceeds maximum allowed (18)`);
+      }
+
+      return {
+        isValid: errors.length === 0,
+        errors,
+        totalCredits
+      };
+    }
+
+    static calculateScheduleScore(schedule, preferences) {
+      let score = 100;
+      
+      // Penalize gaps between classes
+      if (preferences.avoidGaps) {
+        const gaps = this.calculateGaps(schedule);
+        score -= gaps * 5; // -5 points per hour gap
+      }
+
+      // Reward preferred faculty matches
+      if (preferences.selectedFaculty.size > 0) {
+        schedule.forEach(course => {
+          const preferredFaculty = preferences.selectedFaculty.get(course.course);
+          if (preferredFaculty?.has(course.faculty)) {
+            score += 10;
+          }
+        });
+      }
+
+      // Consider time preferences
+      if (preferences.timeStart || preferences.timeEnd) {
+        schedule.forEach(course => {
+          const time = parseRange(course.time);
+          if (preferences.timeStart && time.start < preferences.timeStart * 60) {
+            score -= 10;
+          }
+          if (preferences.timeEnd && time.end > preferences.timeEnd * 60) {
+            score -= 10;
+          }
+        });
+      }
+
+      return Math.max(0, score);
+    }
+
+    static calculateGaps(schedule) {
+      let totalGapMinutes = 0;
+      const daySchedules = new Map();
+
+      // Group classes by day
+      schedule.forEach(course => {
+        const days = [...daysSet(course.days)];
+        days.forEach(day => {
+          if (!daySchedules.has(day)) {
+            daySchedules.set(day, []);
+          }
+          daySchedules.get(day).push({
+            time: parseRange(course.time),
+            course: course.course
+          });
+        });
+      });
+
+      // Calculate gaps for each day
+      daySchedules.forEach(classes => {
+        if (classes.length < 2) return;
+        
+        classes.sort((a, b) => a.time.start - b.time.start);
+        
+        for (let i = 1; i < classes.length; i++) {
+          const gap = classes[i].time.start - classes[i-1].time.end;
+          if (gap > 20) { // Ignore gaps less than 20 minutes
+            totalGapMinutes += gap;
+          }
+        }
+      });
+
+      return Math.floor(totalGapMinutes / 60); // Return hours
+    }
   }
 
   function setupCourseSelection() {
@@ -375,34 +1016,33 @@
 
   // Backtracking with pruning
   function generate({usePreferences=false, requireDays=null, maxResults=200, noEarly=false, noLate=false}){
-    const results = [];
-    const req = REQUIRED.slice();
+    if (!AppState.scheduleGenerator) {
+      initScheduleGenerator();
+    }
 
-    function backtrack(idx, schedule){
-      if(results.length>=maxResults) return;
-      if(idx===req.length){
-        // final checks: unique day count
-        const unique = new Set(schedule.flatMap(s=>s.days.split(''))).size;
-        if(requireDays===null || requireDays===unique) results.push(schedule.slice());
-        return;
-      }
+    // Update filters based on parameters
+    AppState.filters.maxResults = maxResults;
+    AppState.filters.avoidGaps = usePreferences;
+    AppState.filters.balancedLoad = usePreferences;
+    
+    if (requireDays) {
+      AppState.filters.days = new Set(requireDays);
+    }
+    
+    if (noEarly) {
+      AppState.filters.timeStart = 9; // 9 AM
+    }
+    
+    if (noLate) {
+      AppState.filters.timeEnd = 17; // 5 PM
+    }
 
-      const courseName = req[idx];
-      let candidates = OPTIONS[courseName] || [];
-      if(usePreferences){
-        const basePrefs = new Set(PREFERENCES[courseName] || []);
-        // include faculties the user toggled
-        const merged = new Set([...basePrefs, ...USER_FACULTY_PREFS]);
-        if(merged.size>0){
-          candidates = candidates.filter(c=> merged.has(c.faculty));
-        }
-      }
-
-      for(const cand of candidates){
-        // time filters
-        const start = timeToMinutes(cand.time.split(' - ')[0]);
-        if(noEarly && start < 9*60) continue;
-        if(noLate && start >= 18*60) continue;
+    // Generate schedules using the new generator
+    AppState.loading = true;
+    AppState.schedules = AppState.scheduleGenerator.generateSchedules();
+    AppState.loading = false;
+    refreshUI();
+  }
 
         // pair lab for EEE111
         const group = [cand];
@@ -494,7 +1134,9 @@
   }
 
   // Build a visual timetable grid for one schedule
-  function buildTimetable(schedule){
+  // View management functions
+  let viewManager = {
+    buildTimetable: function(schedule) {
     // calendar-style timetable: columns per day, vertical minutes from 7:00 to 20:00
     const container = document.createElement('div'); container.className='timetable';
     const days = ['S','M','T','W','R','A','F'];
@@ -554,7 +1196,7 @@
   }
 
   // Render faculty toggles dynamically
-  function renderFacultyToggles(){
+      renderFacultyToggles: function() {
     const faculties = new Set(COURSES.map(c=>c.faculty));
     facultyToggles.innerHTML = '';
     for(const f of faculties){
@@ -573,7 +1215,76 @@
   }
 
   // PWA install prompt handling
-  let deferredPrompt = null;
+  // PWA Support
+  var PWAManager = {
+    deferredPrompt: null,
+
+    init() {
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        this.deferredPrompt = e;
+        UIManager.showToast('Install CourseWizard for offline access', 'info', elements);
+      });
+
+      window.addEventListener('appinstalled', () => {
+        this.deferredPrompt = null;
+        console.log('PWA was installed');
+      });
+    },
+
+    async install() {
+      if (!this.deferredPrompt) {
+        console.log('Can\'t install PWA: prompt not available');
+        return;
+      }
+
+      this.deferredPrompt.prompt();
+      const { outcome } = await this.deferredPrompt.userChoice;
+      console.log(`PWA installation ${outcome}`);
+      this.deferredPrompt = null;
+    }
+  };
+
+  // Application entry point
+  var init = function() {
+    var elements = initializeElements();
+
+    // Initialize PWA support
+    PWAManager.init();
+
+    // Set up event listeners
+    elements.themeToggle.addEventListener('click', () => UIManager.toggleTheme(state, elements));
+    elements.btnListView.addEventListener('click', () => UIManager.setView('list', state, elements));
+    elements.btnGridView.addEventListener('click', () => UIManager.setView('grid', state, elements));
+    
+    elements.courseSearch.addEventListener('input', () => CourseManager.updateCourseList(state, elements));
+    elements.facultySearch.addEventListener('input', () => CourseManager.updateFacultyList(state, elements));
+    
+    elements.btnGenerateRoutine.addEventListener('click', async () => {
+      UIManager.updateLoadingState(true, elements);
+      try {
+        const schedules = await ScheduleGenerator.generateSchedules(state);
+        ViewManager.displaySchedules(schedules, state, elements);
+      } catch (error) {
+        console.error('Error generating schedules:', error);
+        UIManager.showToast('Failed to generate schedules', 'error', elements);
+      } finally {
+        UIManager.updateLoadingState(false, elements);
+      }
+    });
+
+    // Initialize UI
+    document.body.classList.toggle('dark-theme', state.darkMode);
+    UIManager.setView(state.view, state, elements);
+    CourseManager.updateCourseList(state, elements);
+    CourseManager.updateFacultyList(state, elements);
+  }
+
+  // Initialize on DOM ready
+  // Initialize application
+  document.addEventListener('DOMContentLoaded', function() {
+    init();
+  });
   window.addEventListener('beforeinstallprompt', (e)=>{
     e.preventDefault(); deferredPrompt = e; openFilters.classList.add('installable');
     openFilters.textContent = 'Install';

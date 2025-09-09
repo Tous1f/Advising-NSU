@@ -9,6 +9,7 @@ Files
 - `styles.css` — Batman dark styles
 - `data.js` — embedded course dataset and preferences
 - `app.js` — scheduling logic, UI wiring
+ - `icon-192.png`, `icon-512.png` — app icons used by the PWA manifest
 
 How to run (Windows PowerShell)
 1. Open PowerShell and change directory to the app folder:

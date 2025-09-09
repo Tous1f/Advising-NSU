@@ -1029,7 +1029,8 @@ window.addEventListener('load', function () {
         'EEE111L': 'Electrical Circuits Lab',
         'EEE154': 'Digital Logic Design',
         'CHE101': 'Chemistry',
-        'ENG111': 'English Composition'
+        'ENG111': 'English Composition',
+        'MAT361': 'Advanced Mathematics'
       };
       return titles[courseCode] || 'Course';
     }

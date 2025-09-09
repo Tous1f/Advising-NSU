@@ -236,7 +236,20 @@ const COURSES = [
   { course: "CSE323", section: 3, faculty: "RMz1", time: "08:00 AM - 09:30 AM", days: "RA", seats: 35 },
   { course: "CSE323", section: 4, faculty: "RMz1", time: "11:20 AM - 12:50 PM", days: "RA", seats: 35 },
   { course: "CSE323", section: 5, faculty: "MUA3", time: "08:00 AM - 09:30 AM", days: "RA", seats: 35 },
-  { course: "CSE323", section: 6, faculty: "MUA3", time: "09:40 AM - 11:10 AM", days: "RA", seats: 35 }
+  { course: "CSE323", section: 6, faculty: "MUA3", time: "09:40 AM - 11:10 AM", days: "RA", seats: 35 },
+
+  // MAT361 - Mathematics courses
+  { course: "MAT361", section: 2, faculty: "ISR", time: "04:20 PM - 05:50 PM", days: "ST", seats: 35 },
+  { course: "MAT361", section: 3, faculty: "MdRk", time: "01:00 PM - 02:30 PM", days: "MW", seats: 35 },
+  { course: "MAT361", section: 5, faculty: "MALn", time: "01:00 PM - 02:30 PM", days: "ST", seats: 35 },
+  { course: "MAT361", section: 6, faculty: "MALn", time: "04:20 PM - 05:50 PM", days: "ST", seats: 35 },
+  { course: "MAT361", section: 7, faculty: "MLM", time: "09:40 AM - 11:10 AM", days: "RA", seats: 35 },
+  { course: "MAT361", section: 8, faculty: "MLM", time: "11:20 AM - 12:50 PM", days: "RA", seats: 35 },
+  { course: "MAT361", section: 9, faculty: "MMRh", time: "09:40 AM - 11:10 AM", days: "RA", seats: 35 },
+  { course: "MAT361", section: 10, faculty: "AdS1", time: "01:00 PM - 02:30 PM", days: "RA", seats: 35 },
+  { course: "MAT361", section: 11, faculty: "AdS1", time: "02:40 PM - 04:10 PM", days: "RA", seats: 35 },
+  { course: "MAT361", section: 12, faculty: "MdRk", time: "04:20 PM - 05:50 PM", days: "MW", seats: 35 },
+  { course: "MAT361", section: 13, faculty: "MAIm", time: "09:40 AM - 11:10 AM", days: "RA", seats: 35 }
 ];
 
 // User preferences from file
@@ -245,7 +258,8 @@ const PREFERENCES = {
   'CSE373': ['SfM1', 'SMAH', 'STI', 'EKD'],
   'EEE111': ['RTK', 'SvS', 'MFY'],
   'CSE273': ['MKN1', 'MMK1'],
-  'CSE323': ['MUA3', 'RMz1']
+  'CSE323': ['MUA3', 'RMz1'],
+  'MAT361': ['ISR', 'MdRk', 'MLM', 'MMRh']
 };
 
 // Required courses to schedule

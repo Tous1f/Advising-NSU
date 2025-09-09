@@ -19,15 +19,12 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-          cache: gradle
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-          cache: npm
-          cache-dependency-path: app/package-lock.json
-          
+
       - name: Install Android SDK
         run: |
           mkdir -p $ANDROID_HOME/cmdline-tools

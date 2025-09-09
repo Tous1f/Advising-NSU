@@ -1,11 +1,225 @@
 // BatSched app logic
 (function(){
+  // DOM Elements
+  const sidebar = document.getElementById('sidebar');
+  const toggleSidebar = document.getElementById('toggleSidebar');
+  const courseSearch = document.getElementById('courseSearch');
+  const facultySearch = document.getElementById('facultySearch');
+  const btnGenerateRoutine = document.getElementById('btnGenerateRoutine');
+  const btnReset = document.getElementById('btnReset');
+  const themeToggle = document.getElementById('themeToggle');
+  const toast = document.getElementById('toast');
+  const toastMessage = document.getElementById('toastMessage');
+  const btnListView = document.getElementById('btnListView');
+  const btnGridView = document.getElementById('btnGridView');
+  const resultsSection = document.getElementById('results');
+  const noResults = document.getElementById('noResults');
+  
+  // State Management
+  const state = {
+    selectedCourses: new Set(),
+    selectedFaculty: new Map(),
+    filters: {
+      timeStart: null,
+      timeEnd: null,
+      days: new Set(),
+      avoidGaps: false,
+      balancedLoad: false,
+      maxResults: 50
+    },
+    view: 'list',
+    darkMode: false
+  };
+
+  // Utility Functions
+  function showToast(message, type = 'info') {
+    toastMessage.textContent = message;
+    toast.className = `toast ${type}`;
+    setTimeout(() => toast.classList.add('hidden'), 3000);
+  }
+
+  function toggleTheme() {
+    state.darkMode = !state.darkMode;
+    document.body.classList.toggle('dark-theme');
+    localStorage.setItem('darkMode', state.darkMode);
+    themeToggle.innerHTML = state.darkMode ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+  }
+
+  function filterCourses(searchTerm) {
+    const terms = searchTerm.toLowerCase().split(' ');
+    return COURSES.filter(course => {
+      const courseText = `${course.course} ${course.faculty} Section ${course.section}`.toLowerCase();
+      return terms.every(term => courseText.includes(term));
+    });
+  }
+
+  function updateCourseList() {
+    const searchTerm = courseSearch.value;
+    const filteredCourses = searchTerm ? filterCourses(searchTerm) : COURSES;
+    const uniqueCourses = [...new Set(filteredCourses.map(c => c.course))];
+    
+    const courseList = document.getElementById('courseList');
+    courseList.innerHTML = uniqueCourses.map(course => `
+      <div class="course-option">
+        <input type="checkbox" id="course_${course}" 
+               ${state.selectedCourses.has(course) ? 'checked' : ''}
+               data-course="${course}">
+        <label for="course_${course}">
+          <span class="course-code">${course}</span>
+          <span class="course-sections">${COURSES.filter(c => c.course === course).length} sections</span>
+        </label>
+      </div>
+    `).join('');
+  }
+
+  function updateFacultyList() {
+    const searchTerm = facultySearch.value.toLowerCase();
+    const facultyList = document.getElementById('facultyToggles');
+    
+    facultyList.innerHTML = '';
+    state.selectedCourses.forEach(course => {
+      const courseFaculty = [...new Set(COURSES.filter(c => c.course === course).map(c => c.faculty))];
+      const filteredFaculty = searchTerm ? 
+        courseFaculty.filter(f => f.toLowerCase().includes(searchTerm)) : 
+        courseFaculty;
+
+      if (filteredFaculty.length > 0) {
+        const courseGroup = document.createElement('div');
+        courseGroup.className = 'faculty-group';
+        courseGroup.innerHTML = `
+          <h4>${course}</h4>
+          ${filteredFaculty.map(faculty => `
+            <div class="faculty-option">
+              <input type="checkbox" id="faculty_${course}_${faculty}"
+                     ${state.selectedFaculty.get(course)?.has(faculty) ? 'checked' : ''}
+                     data-course="${course}" data-faculty="${faculty}">
+              <label for="faculty_${course}_${faculty}">${faculty}</label>
+            </div>
+          `).join('')}
+        `;
+        facultyList.appendChild(courseGroup);
+      }
+    });
+  }
+
+  function resetFilters() {
+    state.selectedCourses.clear();
+    state.selectedFaculty.clear();
+    state.filters = {
+      timeStart: null,
+      timeEnd: null,
+      days: new Set(),
+      avoidGaps: false,
+      balancedLoad: false,
+      maxResults: 50
+    };
+    
+    // Reset UI
+    document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+    document.getElementById('maxResults').value = '50';
+    document.getElementById('preferredTimeStart').value = '';
+    document.getElementById('preferredTimeEnd').value = '';
+    
+    updateCourseList();
+    updateFacultyList();
+    showToast('All filters have been reset');
+  }
+
+  // Event Listeners
+  toggleSidebar.addEventListener('click', () => {
+    sidebar.classList.toggle('active');
+  });
+
+  courseSearch.addEventListener('input', updateCourseList);
+  facultySearch.addEventListener('input', updateFacultyList);
+
+  document.getElementById('courseList').addEventListener('change', e => {
+    if (e.target.matches('input[type="checkbox"]')) {
+      const course = e.target.dataset.course;
+      if (e.target.checked) {
+        state.selectedCourses.add(course);
+      } else {
+        state.selectedCourses.delete(course);
+        state.selectedFaculty.delete(course);
+      }
+      updateFacultyList();
+    }
+  });
+
+  document.getElementById('facultyToggles').addEventListener('change', e => {
+    if (e.target.matches('input[type="checkbox"]')) {
+      const { course, faculty } = e.target.dataset;
+      if (!state.selectedFaculty.has(course)) {
+        state.selectedFaculty.set(course, new Set());
+      }
+      if (e.target.checked) {
+        state.selectedFaculty.get(course).add(faculty);
+      } else {
+        state.selectedFaculty.get(course).delete(faculty);
+      }
+    }
+  });
+
+  btnGenerateRoutine.addEventListener('click', () => {
+    if (state.selectedCourses.size === 0) {
+      showToast('Please select at least one course', 'warning');
+      return;
+    }
+    generateRoutines();
+  });
+
+  btnReset.addEventListener('click', resetFilters);
+  themeToggle.addEventListener('click', toggleTheme);
+
+  btnListView.addEventListener('click', () => {
+    state.view = 'list';
+    btnListView.classList.add('active');
+    btnGridView.classList.remove('active');
+    resultsSection.classList.remove('grid-view');
+  });
+
+  btnGridView.addEventListener('click', () => {
+    state.view = 'grid';
+    btnGridView.classList.add('active');
+    btnListView.classList.remove('active');
+    resultsSection.classList.add('grid-view');
+  });
+
+  // Initialize
+  function init() {
+    // Load theme preference
+    if (localStorage.getItem('darkMode') === 'true') {
+      toggleTheme();
+    }
+    
+    updateCourseList();
+    
+    // Initialize time dropdowns
+    const timeOptions = Array.from({length: 12}, (_, i) => {
+      const hour = i + 8; // Start from 8 AM
+      return `<option value="${hour}">${hour > 12 ? (hour-12) : hour}:00 ${hour >= 12 ? 'PM' : 'AM'}</option>`;
+    }).join('');
+    
+    document.getElementById('preferredTimeStart').innerHTML += timeOptions;
+    document.getElementById('preferredTimeEnd').innerHTML += timeOptions;
+  }
+
+  init();
+  const courseListEl = document.getElementById('courseList');
+  const facultyOptionsEl = document.getElementById('facultyOptions');
+  const btnNext = document.getElementById('btnNext');
+  const btnBack = document.getElementById('btnBack');
+  const btnGenerateRoutine = document.getElementById('btnGenerateRoutine');
   const resultsEl = document.getElementById('results');
   const summaryEl = document.getElementById('summary');
   const btnPreferred = document.getElementById('btnPreferred');
   const btnAll = document.getElementById('btnAll');
   const btn4day = document.getElementById('btn4day');
   const btn5day = document.getElementById('btn5day');
+  
+  // Track selected courses and faculty preferences
+  const selectedCourses = new Set();
+  const selectedFaculty = new Map(); // course -> Set of faculty
   const openFilters = document.getElementById('openFilters');
   const closeFilters = document.getElementById('closeFilters');
   const filterPanel = document.getElementById('filterPanel');
@@ -46,6 +260,106 @@
     const ra = parseRange(a.time); const rb = parseRange(b.time);
     return Math.max(ra.start, rb.start) < Math.min(ra.end, rb.end);
   }
+
+  function setupCourseSelection() {
+    // Get unique course codes
+    const courses = [...new Set(COURSES.map(c => c.course))];
+    courses.sort();
+    
+    // Create checkboxes for each course
+    courseListEl.innerHTML = courses.map(course => `
+      <div class="course-option">
+        <input type="checkbox" id="course_${course}" data-course="${course}">
+        <label for="course_${course}">${course}</label>
+      </div>
+    `).join('');
+    
+    // Add event listeners
+    document.querySelectorAll('#courseList input[type="checkbox"]').forEach(cb => {
+      cb.addEventListener('change', e => {
+        const course = e.target.dataset.course;
+        if (e.target.checked) {
+          selectedCourses.add(course);
+        } else {
+          selectedCourses.delete(course);
+        }
+      });
+    });
+  }
+
+  function setupFacultySelection() {
+    // Group sections by course and get unique faculty for each
+    const facultyByCourse = {};
+    selectedCourses.forEach(course => {
+      const sections = COURSES.filter(c => c.course === course);
+      const faculty = [...new Set(sections.map(s => s.faculty))];
+      facultyByCourse[course] = faculty.sort();
+    });
+
+    // Create faculty selection groups
+    facultyOptionsEl.innerHTML = Object.entries(facultyByCourse).map(([course, faculty]) => `
+      <div class="faculty-group">
+        <h4>${course}</h4>
+        ${faculty.map(f => `
+          <div class="faculty-option">
+            <input type="checkbox" id="faculty_${course}_${f}" data-course="${course}" data-faculty="${f}">
+            <label for="faculty_${course}_${f}">${f}</label>
+          </div>
+        `).join('')}
+      </div>
+    `).join('');
+
+    // Add event listeners
+    document.querySelectorAll('#facultyOptions input[type="checkbox"]').forEach(cb => {
+      cb.addEventListener('change', e => {
+        const course = e.target.dataset.course;
+        const faculty = e.target.dataset.faculty;
+        if (!selectedFaculty.has(course)) {
+          selectedFaculty.set(course, new Set());
+        }
+        if (e.target.checked) {
+          selectedFaculty.get(course).add(faculty);
+        } else {
+          selectedFaculty.get(course).delete(faculty);
+        }
+      });
+    });
+  }
+
+  // Setup navigation between steps
+  btnNext.addEventListener('click', () => {
+    if (selectedCourses.size === 0) {
+      alert('Please select at least one course');
+      return;
+    }
+    courseSelectionEl.classList.add('hidden');
+    setupFacultySelection();
+    facultySelectionEl.classList.remove('hidden');
+  });
+
+  btnBack.addEventListener('click', () => {
+    facultySelectionEl.classList.add('hidden');
+    courseSelectionEl.classList.remove('hidden');
+  });
+
+  btnGenerateRoutine.addEventListener('click', () => {
+    facultySelectionEl.classList.add('hidden');
+    controlsEl.classList.remove('hidden');
+    // Filter available courses based on selection
+    COURSES = COURSES.filter(course => {
+      if (!selectedCourses.has(course.course)) return false;
+      if (selectedFaculty.has(course.course) && 
+          selectedFaculty.get(course.course).size > 0 &&
+          !selectedFaculty.get(course.course).has(course.faculty)) {
+        return false;
+      }
+      return true;
+    });
+    generateRoutines();
+  });
+
+  // Initialize course selection
+  setupCourseSelection();
 
   // Pre-index options by course
   const OPTIONS = {};
@@ -134,8 +448,31 @@
 
       // grid summary
       const grid = document.createElement('div'); grid.className='grid';
-      schedule.forEach(c=>{
-        const cell = document.createElement('div'); cell.className='cell';
+      // Sort schedule by time
+      schedule.sort((a, b) => {
+        const timeA = timeToMinutes(a.time.split(' - ')[0]);
+        const timeB = timeToMinutes(b.time.split(' - ')[0]);
+        return timeA - timeB;
+      });
+      // Group by time slot for better display
+      const timeSlots = new Map();
+      schedule.forEach(c => {
+        const time = c.time;
+        if (!timeSlots.has(time)) {
+          timeSlots.set(time, []);
+        }
+        timeSlots.get(time).push(c);
+      });
+      // Create grid rows for each time slot
+      [...timeSlots.entries()].forEach(([time, courses]) => {
+        const timeLabel = document.createElement('div');
+        timeLabel.className = 'time-label';
+        timeLabel.textContent = time;
+        grid.appendChild(timeLabel);
+        
+        courses.forEach(c => {
+          const cell = document.createElement('div');
+          cell.className = 'cell';
         cell.innerHTML = `<strong>${c.course} — S${c.section}</strong><div style="font-size:13px;color:#9aa4b2">${c.faculty}</div><div style="margin-top:6px">${c.days} · ${c.time}</div>`;
         grid.appendChild(cell);
       });

@@ -3,10 +3,11 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>BatSched — Mobile Advising Plans</title>
+  <title>CourseWizard — Smart Schedule Planner</title>
   
   <!-- Stylesheets -->
   <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   
   <!-- PWA and Icons -->
   <link rel="apple-touch-icon" href="./icon-192.png">
@@ -15,11 +16,11 @@
   <link rel="manifest" href="./manifest.json">
   
   <!-- Meta tags -->
-  <meta name="description" content="Generate all advising plans on-device. No database. Mobile-first Batman-themed UI." />
+  <meta name="description" content="Smart course scheduling made magical. Create your perfect class schedule instantly." />
   <meta name="theme-color" content="#0b0f15">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="BatSched">
+  <meta name="apple-mobile-web-app-title" content="CourseWizard">
   
   <!-- Preload critical resources -->
   <link rel="preload" href="./styles.css" as="style">
@@ -27,58 +28,165 @@
   <link rel="preload" href="./data.js" as="script">
 </head>
 <body>
-  <main class="app">
-    <header class="app-header">
-      <div class="logo">
-        <!-- larger animated bat icon -->
-        <svg viewBox="0 0 64 64" width="56" height="56" aria-hidden="true" class="bat-svg">
-          <defs>
-            <filter id="glow"><feGaussianBlur stdDeviation="2.2" result="b"/></filter>
-          </defs>
-          <path fill="#ffd400" filter="url(#glow)" d="M32 8c-6 0-11 5-16 5 0 0-3 6-3 10 0 8 6 14 6 14s2-6 9-6 9 6 9 6 6-6 6-14c0-4-3-10-3-10-5 0-10-5-16-5z" />
-        </svg>
-      </div>
-      <div class="title">BatSched</div>
-      <button id="openFilters" class="btn small">Filters</button>
-    </header>
-
-    <section class="controls">
-      <div class="btn-row">
-        <button id="btnPreferred" class="btn">Preferred</button>
-        <button id="btnAll" class="btn">All</button>
-      </div>
-      <div class="btn-row">
-        <button id="btn4day" class="btn">4-Day</button>
-        <button id="btn5day" class="btn">5-Day</button>
-      </div>
-      <div class="summary" id="summary">Ready — dataset loaded.</div>
-    </section>
-
-    <aside id="filterPanel" class="filters hidden">
-      <h3>Filters</h3>
-      <div class="filter-row"><label><input type="checkbox" id="usePrefs"> Use my faculty preferences</label></div>
-      <div class="filter-row"><label><input type="checkbox" id="noEarly"> No classes before 9:00 AM</label></div>
-      <div class="filter-row"><label><input type="checkbox" id="noLate"> No classes after 6:00 PM</label></div>
-  <div class="filter-row"><label for="maxResults">Max results:</label> <input id="maxResults" type="number" min="1" max="1000" value="200"></div>
-
-      <hr />
-      <h4>Custom Faculty Preferences</h4>
-      <div id="facultyToggles" class="faculty-list">
-        <!-- dynamically filled checkboxes for faculties -->
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <i class="fas fa-hat-wizard"></i>
+        </div>
+        <h1>CourseWizard</h1>
       </div>
 
-  <div class="filter-close"><button id="closeFilters" class="btn small">Close</button></div>
+      <!-- Course Selection Panel -->
+      <div class="sidebar-section">
+        <h3><i class="fas fa-book"></i> Select Courses</h3>
+        <div class="search-box">
+          <input type="text" id="courseSearch" placeholder="Search courses...">
+          <i class="fas fa-search"></i>
+        </div>
+        <div class="course-list" id="courseList">
+          <!-- Dynamically filled with course checkboxes -->
+        </div>
+      </div>
+
+      <!-- Smart Filters -->
+      <div class="sidebar-section">
+        <h3><i class="fas fa-filter"></i> Smart Filters</h3>
+        
+        <!-- Time Preferences -->
+        <div class="filter-group">
+          <h4>Time Preferences</h4>
+          <div class="filter-row">
+            <label><input type="checkbox" id="noEarly"> No Early Classes (Before 9 AM)</label>
+          </div>
+          <div class="filter-row">
+            <label><input type="checkbox" id="noLate"> No Late Classes (After 6 PM)</label>
+          </div>
+          <div class="time-range">
+            <label>Preferred Time Range:</label>
+            <select id="preferredTimeStart">
+              <option value="">Start Time</option>
+              <option value="8">8:00 AM</option>
+              <option value="9">9:00 AM</option>
+              <option value="10">10:00 AM</option>
+              <option value="11">11:00 AM</option>
+              <option value="12">12:00 PM</option>
+            </select>
+            <select id="preferredTimeEnd">
+              <option value="">End Time</option>
+              <option value="16">4:00 PM</option>
+              <option value="17">5:00 PM</option>
+              <option value="18">6:00 PM</option>
+              <option value="19">7:00 PM</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Day Preferences -->
+        <div class="filter-group">
+          <h4>Day Preferences</h4>
+          <div class="day-toggles">
+            <label class="day-toggle"><input type="checkbox" value="S"> S</label>
+            <label class="day-toggle"><input type="checkbox" value="M"> M</label>
+            <label class="day-toggle"><input type="checkbox" value="T"> T</label>
+            <label class="day-toggle"><input type="checkbox" value="W"> W</label>
+            <label class="day-toggle"><input type="checkbox" value="R"> R</label>
+            <label class="day-toggle"><input type="checkbox" value="A"> A</label>
+          </div>
+          <div class="quick-select">
+            <button id="btn4day" class="btn-small">4-Day Week</button>
+            <button id="btn5day" class="btn-small">5-Day Week</button>
+          </div>
+        </div>
+
+        <!-- Faculty Preferences -->
+        <div class="filter-group">
+          <h4>Faculty Preferences</h4>
+          <div class="search-box">
+            <input type="text" id="facultySearch" placeholder="Search faculty...">
+            <i class="fas fa-search"></i>
+          </div>
+          <div id="facultyToggles" class="faculty-list">
+            <!-- Dynamically filled -->
+          </div>
+        </div>
+
+        <!-- Additional Preferences -->
+        <div class="filter-group">
+          <h4>Additional Options</h4>
+          <div class="filter-row">
+            <label><input type="checkbox" id="avoidGaps"> Minimize Gaps Between Classes</label>
+          </div>
+          <div class="filter-row">
+            <label><input type="checkbox" id="balancedLoad"> Balance Daily Course Load</label>
+          </div>
+          <div class="filter-row">
+            <label>Max Results: <input type="number" id="maxResults" min="1" max="1000" value="50"></label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="sidebar-actions">
+        <button id="btnGenerateRoutine" class="btn primary">
+          <i class="fas fa-wand-sparkles"></i> Generate Schedule
+        </button>
+        <button id="btnReset" class="btn secondary">
+          <i class="fas fa-undo"></i> Reset Filters
+        </button>
+      </div>
     </aside>
 
-    <section id="results" class="results">
-      <!-- schedule cards inserted here -->
-    </section>
+    <!-- Main Content -->
+    <main class="main-content">
+      <header class="main-header">
+        <button id="toggleSidebar" class="btn-icon">
+          <i class="fas fa-bars"></i>
+        </button>
+        <div class="view-controls">
+          <button id="btnListView" class="btn-icon active" title="List View">
+            <i class="fas fa-list"></i>
+          </button>
+          <button id="btnGridView" class="btn-icon" title="Grid View">
+            <i class="fas fa-th"></i>
+          </button>
+        </div>
+        <div class="generated-info">
+          <span id="summary">Ready to create your schedule</span>
+        </div>
+        <div class="actions">
+          <button id="btnExport" class="btn-icon" title="Export Schedule">
+            <i class="fas fa-download"></i>
+          </button>
+          <button id="btnShare" class="btn-icon" title="Share Schedule">
+            <i class="fas fa-share-alt"></i>
+          </button>
+        </div>
+      </header>
 
-    <footer class="app-footer">
-      <small>On-device. No network. Data embedded.</small>
-      <a id="downloadJson" class="link">Download JSON</a>
-    </footer>
-  </main>
+      <section id="results" class="results">
+        <!-- schedule cards inserted here -->
+      </section>
+
+      <div id="noResults" class="no-results hidden">
+        <i class="fas fa-magic"></i>
+        <h2>No schedules found</h2>
+        <p>Try adjusting your filters or selecting different courses</p>
+      </div>
+    </main>
+  </div>
+
+  <!-- Toast Notifications -->
+  <div id="toast" class="toast hidden">
+    <i class="fas fa-info-circle"></i>
+    <span id="toastMessage"></span>
+  </div>
+
+  <!-- Theme Toggle -->
+  <button id="themeToggle" class="theme-toggle" title="Toggle Theme">
+    <i class="fas fa-moon"></i>
+  </button>
 
   <script>
     if('serviceWorker' in navigator){

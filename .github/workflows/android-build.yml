@@ -37,12 +37,14 @@ jobs:
           $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --install "platform-tools" "build-tools;33.0.2" "platforms;android-33" > /dev/null
 
       - name: Install npm dependencies
-        run: npm ci || npm install
+        working-directory: app
+        run: npm install
 
       - name: Add Android via Capacitor (if needed)
+        working-directory: app
         run: |
           npx cap --version || npm install @capacitor/cli @capacitor/core @capacitor/android --no-save
-          if [ ! -d "android" ]; then npx cap add android --web-dir=.; fi
+          if [ ! -d "android" ]; then npx cap add android; fi
 
       - name: Copy and sync web assets to Android
         run: |
